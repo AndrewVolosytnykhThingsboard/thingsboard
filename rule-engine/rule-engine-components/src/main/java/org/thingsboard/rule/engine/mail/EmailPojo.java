@@ -35,6 +35,7 @@ import lombok.Data;
 import org.thingsboard.server.common.data.id.BlobEntityId;
 
 import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -47,5 +48,7 @@ class EmailPojo {
     private final String subject;
     private final String body;
     private final List<BlobEntityId> attachments;
+    private final Map<String, String> images;
+    private final boolean html;
 
 }

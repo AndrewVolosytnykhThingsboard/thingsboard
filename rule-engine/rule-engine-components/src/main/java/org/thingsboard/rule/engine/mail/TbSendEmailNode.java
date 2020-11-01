@@ -33,6 +33,9 @@ package org.thingsboard.rule.engine.mail;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.InputStreamSource;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.thingsboard.rule.engine.api.RuleNode;
@@ -49,7 +52,9 @@ import org.thingsboard.server.common.msg.TbMsg;
 import javax.activation.DataSource;
 import javax.mail.internet.MimeMessage;
 import javax.mail.util.ByteArrayDataSource;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.thingsboard.common.util.DonAsynchron.withCallback;
@@ -107,10 +112,11 @@ public class TbSendEmailNode implements TbNode {
     private void sendEmail(TbContext ctx, EmailPojo email) throws Exception {
         if (this.config.isUseSystemSmtpSettings()) {
             ctx.getMailService().send(ctx.getTenantId(), email.getFrom(), email.getTo(), email.getCc(),
-                    email.getBcc(), email.getSubject(), email.getBody(), email.getAttachments());
+                    email.getBcc(), email.getSubject(), email.getBody(), email.isHtml(), email.getAttachments(), email.getImages());
         } else {
             MimeMessage mailMsg = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mailMsg, !email.getAttachments().isEmpty(),"UTF-8");
+            boolean multipart = (email.getAttachments() != null && !email.getAttachments().isEmpty() || email.getImages() != null && !email.getImages().isEmpty());
+            MimeMessageHelper helper = new MimeMessageHelper(mailMsg, multipart, "UTF-8");
             helper.setFrom(email.getFrom());
             helper.setTo(email.getTo().split("\\s*,\\s*"));
             if (!StringUtils.isBlank(email.getCc())) {
@@ -120,12 +126,23 @@ public class TbSendEmailNode implements TbNode {
                 helper.setBcc(email.getBcc().split("\\s*,\\s*"));
             }
             helper.setSubject(email.getSubject());
-            helper.setText(email.getBody());
+            helper.setText(email.getBody(), email.isHtml());
             for (BlobEntityId blobEntityId : email.getAttachments()) {
                 BlobEntity blobEntity = ctx.getPeContext().getBlobEntityService().findBlobEntityById(ctx.getTenantId(), blobEntityId);
                 if (blobEntity != null) {
                     DataSource dataSource = new ByteArrayDataSource(blobEntity.getData().array(), blobEntity.getContentType());
                     helper.addAttachment(blobEntity.getName(), dataSource);
+                }
+            }
+            if (email.getImages() != null && email.getImages().size() > 0) {
+                Map<String, String> images = email.getImages();
+                for (String imgId : images.keySet()) {
+                    String imgValue = images.get(imgId);
+                    String value = imgValue.replaceFirst("^data:image/[^;]*;base64,?", "");
+                    byte[] bytes = javax.xml.bind.DatatypeConverter.parseBase64Binary(value);
+                    String contentType = helper.getFileTypeMap().getContentType(imgId);
+                    InputStreamSource iss = () -> new ByteArrayInputStream(bytes);
+                    helper.addInline(imgId, iss, contentType);
                 }
             }
             mailSender.send(helper.getMimeMessage());

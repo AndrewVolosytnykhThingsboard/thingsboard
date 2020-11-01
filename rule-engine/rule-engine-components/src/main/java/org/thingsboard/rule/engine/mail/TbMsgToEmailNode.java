@@ -67,6 +67,7 @@ public class TbMsgToEmailNode implements TbNode {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private static final String ATTACHMENTS = "attachments";
+    private static final String IMAGES = "images";
     private static final String EMAIL_TIMEZONE = "emailTimezone";
 
     private static final Pattern dateVarPattern = Pattern.compile("%d\\{([^\\}]*)\\}");
@@ -107,6 +108,7 @@ public class TbMsgToEmailNode implements TbNode {
         builder.to(fromTemplate(this.config.getToTemplate(), msg.getMetaData()));
         builder.cc(fromTemplate(this.config.getCcTemplate(), msg.getMetaData()));
         builder.bcc(fromTemplate(this.config.getBccTemplate(), msg.getMetaData()));
+        builder.html(Boolean.parseBoolean(fromTemplate(this.config.getIsHtmlTemplate(), msg.getMetaData())));
         builder.subject(fromTemplateWithDate(this.config.getSubjectTemplate(), msg.getMetaData(), currentDate, tz));
         builder.body(fromTemplateWithDate(this.config.getBodyTemplate(), msg.getMetaData(), currentDate, tz));
         List<BlobEntityId> attachments = new ArrayList<>();
@@ -118,6 +120,11 @@ public class TbMsgToEmailNode implements TbNode {
             }
         }
         builder.attachments(attachments);
+        String imagesStr = msg.getMetaData().getValue(IMAGES);
+        if (!StringUtils.isEmpty(imagesStr)) {
+            Map<String, String> imgMap = MAPPER.readValue(imagesStr, new TypeReference<HashMap<String, String>>() {});
+            builder.images(imgMap);
+        }
         return builder.build();
     }
 

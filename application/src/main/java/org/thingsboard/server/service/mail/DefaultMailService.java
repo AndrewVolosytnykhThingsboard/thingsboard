@@ -37,6 +37,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.NestedRuntimeException;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.InputStreamSource;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -58,6 +61,9 @@ import org.thingsboard.server.dao.settings.AdminSettingsService;
 import javax.activation.DataSource;
 import javax.mail.internet.MimeMessage;
 import javax.mail.util.ByteArrayDataSource;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -206,12 +212,23 @@ public class DefaultMailService implements MailService {
 
     @Override
     public void send(TenantId tenantId, String from, String to, String cc, String bcc, String subject, String body, List<BlobEntityId> attachments) throws ThingsboardException {
+        send(tenantId, from, to, cc, bcc, subject, body, false, attachments);
+    }
+
+    @Override
+    public void send(TenantId tenantId, String from, String to, String cc, String bcc, String subject, String body, boolean isHtml, List<BlobEntityId> attachments) throws ThingsboardException {
+        send(tenantId, from, to, cc, bcc, subject, body, isHtml, attachments);
+    }
+
+    @Override
+    public void send(TenantId tenantId, String from, String to, String cc, String bcc, String subject, String body, boolean isHtml, List<BlobEntityId> attachments, Map<String, String> images) throws ThingsboardException {
         JsonNode jsonConfig = getConfig(tenantId, "mail", allowSystemMailService);
         JavaMailSenderImpl mailSender = createMailSender(jsonConfig);
         String mailFrom = getStringValue(jsonConfig, "mailFrom");
         try {
             MimeMessage mailMsg = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mailMsg, attachments != null && !attachments.isEmpty(), "UTF-8");
+            boolean multipart = (attachments != null && !attachments.isEmpty() || images != null && !images.isEmpty());
+            MimeMessageHelper helper = new MimeMessageHelper(mailMsg, multipart, "UTF-8");
             helper.setFrom(StringUtils.isBlank(from) ? mailFrom : from);
             helper.setTo(to.split("\\s*,\\s*"));
             if (!StringUtils.isBlank(cc)) {
@@ -221,7 +238,7 @@ public class DefaultMailService implements MailService {
                 helper.setBcc(bcc.split("\\s*,\\s*"));
             }
             helper.setSubject(subject);
-            helper.setText(body);
+            helper.setText(body, isHtml);
             if (attachments != null) {
                 for (BlobEntityId blobEntityId : attachments) {
                     BlobEntity blobEntity = blobEntityService.findBlobEntityById(tenantId, blobEntityId);
@@ -229,6 +246,16 @@ public class DefaultMailService implements MailService {
                         DataSource dataSource = new ByteArrayDataSource(blobEntity.getData().array(), blobEntity.getContentType());
                         helper.addAttachment(blobEntity.getName(), dataSource);
                     }
+                }
+            }
+            if (images != null && images.size() > 0) {
+                for (String imgId : images.keySet()) {
+                    String imgValue = images.get(imgId);
+                    String value = imgValue.replaceFirst("^data:image/[^;]*;base64,?", "");
+                    byte[] bytes = javax.xml.bind.DatatypeConverter.parseBase64Binary(value);
+                    String contentType = helper.getFileTypeMap().getContentType(imgId);
+                    InputStreamSource iss = () -> new ByteArrayInputStream(bytes);
+                    helper.addInline(imgId, iss, contentType);
                 }
             }
             mailSender.send(helper.getMimeMessage());
@@ -301,7 +328,7 @@ public class DefaultMailService implements MailService {
                 javaMailProperties.put(MAIL_PROP + protocol + ".ssl.protocols", tlsVersion);
             }
         }
-        
+
         boolean enableProxy = jsonConfig.has("enableProxy") && jsonConfig.get("enableProxy").asBoolean();
 
         if (enableProxy) {
