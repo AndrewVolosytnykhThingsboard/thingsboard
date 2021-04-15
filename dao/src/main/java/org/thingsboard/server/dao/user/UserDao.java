@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -36,11 +36,12 @@ import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.dao.Dao;
+import org.thingsboard.server.dao.TenantEntityDao;
 
 import java.util.List;
 import java.util.UUID;
 
-public interface UserDao extends Dao<User> {
+public interface UserDao extends Dao<User>, TenantEntityDao {
 
     /**
      * Save or update user object
@@ -66,7 +67,7 @@ public interface UserDao extends Dao<User> {
      * @return the list of user entities
      */
     PageData<User> findByTenantId(UUID tenantId, PageLink pageLink);
-    
+
     /**
      * Find tenant admin users by tenantId and page link.
      *

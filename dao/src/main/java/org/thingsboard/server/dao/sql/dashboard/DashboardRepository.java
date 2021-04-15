@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -39,4 +39,6 @@ import java.util.UUID;
  * Created by Valerii Sosliuk on 5/6/2017.
  */
 public interface DashboardRepository extends CrudRepository<DashboardEntity, UUID> {
+
+    Long countByTenantId(UUID tenantId);
 }

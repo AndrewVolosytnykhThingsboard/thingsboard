@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -36,6 +36,7 @@ import org.thingsboard.server.gen.transport.TransportProtos.ToCoreNotificationMs
 import org.thingsboard.server.gen.transport.TransportProtos.ToRuleEngineMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToRuleEngineNotificationMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToTransportMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.ToUsageStatsServiceMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.TransportApiRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.TransportApiResponseMsg;
 import org.thingsboard.server.queue.TbQueueConsumer;
@@ -48,7 +49,7 @@ import org.thingsboard.server.queue.common.TbProtoQueueMsg;
  * Responsible for initialization of various Producers and Consumers used by TB Core Node.
  * Implementation Depends on the queue queue.type from yml or TB_QUEUE_TYPE environment variable
  */
-public interface TbCoreQueueFactory {
+public interface TbCoreQueueFactory extends TbUsageStatsClientQueueFactory {
 
     /**
      * Used to push messages to instances of TB Transport Service
@@ -91,6 +92,13 @@ public interface TbCoreQueueFactory {
      * @return
      */
     TbQueueConsumer<TbProtoQueueMsg<ToCoreMsg>> createToCoreMsgConsumer();
+
+    /**
+     * Used to consume messages about usage statistics by TB Core Service
+     *
+     * @return
+     */
+    TbQueueConsumer<TbProtoQueueMsg<ToUsageStatsServiceMsg>> createToUsageStatsServiceMsgConsumer();
 
     /**
      * Used to consume high priority messages by TB Core Service

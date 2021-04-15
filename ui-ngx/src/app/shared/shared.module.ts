@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -165,9 +165,15 @@ import { FullCalendarModule } from '@fullcalendar/angular';
 import { DndModule } from 'ngx-drag-drop';
 import { QueueTypeListComponent } from '@shared/components/queue/queue-type-list.component';
 import { ContactComponent } from '@shared/components/contact.component';
+import { FileSizePipe } from '@shared/pipe/file-size.pipe';
+import { WidgetsBundleSearchComponent } from '@shared/components/widgets-bundle-search.component';
+import { SelectableColumnsPipe } from '@shared/pipe/selectable-columns.pipe';
+import { QuickTimeIntervalComponent } from '@shared/components/time/quick-time-interval.component';
 import { GroupPermissionsComponent } from '@shared/components/role/group-permissions.component';
 import { GroupPermissionDialogComponent } from '@shared/components/role/group-permission-dialog.component';
 import { ShareEntityGroupComponent } from './components/group/share-entity-group.component';
+import { EdgeEntityGroupListComponent } from '@shared/components/group/edge-entity-group-list.component';
+import { MAT_DATE_LOCALE } from '@angular/material/core';
 
 @NgModule({
   providers: [
@@ -177,6 +183,7 @@ import { ShareEntityGroupComponent } from './components/group/share-entity-group
     HighlightPipe,
     TruncatePipe,
     TbJsonPipe,
+    FileSizePipe,
     HasGenericPermissionPipe,
     HasEntityGroupPermissionPipe,
     HasGroupEntityPermissionPipe,
@@ -187,6 +194,10 @@ import { ShareEntityGroupComponent } from './components/group/share-entity-group
     {
       provide: TINYMCE_SCRIPT_SRC,
       useValue: 'assets/tinymce/tinymce.min.js'
+    },
+    {
+      provide: MAT_DATE_LOCALE,
+      useValue: 'en-GB'
     }
   ],
   declarations: [
@@ -209,6 +220,7 @@ import { ShareEntityGroupComponent } from './components/group/share-entity-group
     TimewindowComponent,
     TimewindowPanelComponent,
     TimeintervalComponent,
+    QuickTimeIntervalComponent,
     DashboardSelectComponent,
     DashboardSelectPanelComponent,
     DatetimePeriodComponent,
@@ -227,6 +239,7 @@ import { ShareEntityGroupComponent } from './components/group/share-entity-group
     OwnerAutocompleteComponent,
     EntityGroupSelectComponent,
     EntityGroupListComponent,
+    EdgeEntityGroupListComponent,
     OriginatorSelectComponent,
     EntityKeysListComponent,
     EntityListSelectComponent,
@@ -263,6 +276,8 @@ import { ShareEntityGroupComponent } from './components/group/share-entity-group
     HighlightPipe,
     TruncatePipe,
     TbJsonPipe,
+    FileSizePipe,
+    SelectableColumnsPipe,
     KeyboardShortcutPipe,
     HasGenericPermissionPipe,
     HasEntityGroupPermissionPipe,
@@ -272,6 +287,7 @@ import { ShareEntityGroupComponent } from './components/group/share-entity-group
     HistorySelectorComponent,
     EntityGatewaySelectComponent,
     ContactComponent,
+    WidgetsBundleSearchComponent,
     GroupPermissionsComponent,
     GroupPermissionDialogComponent,
     ShareEntityGroupComponent
@@ -346,6 +362,7 @@ import { ShareEntityGroupComponent } from './components/group/share-entity-group
     TimewindowComponent,
     TimewindowPanelComponent,
     TimeintervalComponent,
+    QuickTimeIntervalComponent,
     DashboardSelectComponent,
     DatetimePeriodComponent,
     DatetimeComponent,
@@ -362,6 +379,7 @@ import { ShareEntityGroupComponent } from './components/group/share-entity-group
     OwnerAutocompleteComponent,
     EntityGroupSelectComponent,
     EntityGroupListComponent,
+    EdgeEntityGroupListComponent,
     OriginatorSelectComponent,
     EntityKeysListComponent,
     EntityListSelectComponent,
@@ -446,6 +464,8 @@ import { ShareEntityGroupComponent } from './components/group/share-entity-group
     TruncatePipe,
     TbJsonPipe,
     KeyboardShortcutPipe,
+    FileSizePipe,
+    SelectableColumnsPipe,
     HasGenericPermissionPipe,
     HasEntityGroupPermissionPipe,
     HasGroupEntityPermissionPipe,
@@ -454,6 +474,7 @@ import { ShareEntityGroupComponent } from './components/group/share-entity-group
     HistorySelectorComponent,
     EntityGatewaySelectComponent,
     ContactComponent,
+    WidgetsBundleSearchComponent,
     GroupPermissionsComponent,
     GroupPermissionDialogComponent,
     ShareEntityGroupComponent

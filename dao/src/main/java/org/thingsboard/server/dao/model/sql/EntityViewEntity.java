@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -39,10 +39,6 @@ import org.thingsboard.server.dao.util.mapping.JsonStringType;
 
 import javax.persistence.Entity;
 import javax.persistence.Table;
-
-/**
- * Created by Victor Basanets on 8/30/2017.
- */
 
 @Data
 @EqualsAndHashCode(callSuper = true)

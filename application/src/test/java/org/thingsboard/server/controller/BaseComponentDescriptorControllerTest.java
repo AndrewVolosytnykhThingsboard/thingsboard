@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -41,6 +41,7 @@ import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.plugin.ComponentDescriptor;
 import org.thingsboard.server.common.data.plugin.ComponentScope;
 import org.thingsboard.server.common.data.plugin.ComponentType;
+import org.thingsboard.server.common.data.rule.RuleChainType;
 import org.thingsboard.server.common.data.security.Authority;
 
 import java.util.List;
@@ -96,14 +97,14 @@ public abstract class BaseComponentDescriptorControllerTest extends AbstractCont
     @Test
     public void testGetByType() throws Exception {
         List<ComponentDescriptor> descriptors = readResponse(
-                doGet("/api/components/" + ComponentType.FILTER).andExpect(status().isOk()), new TypeReference<List<ComponentDescriptor>>() {
+                doGet("/api/components?componentTypes={componentTypes}&ruleChainType={ruleChainType}", ComponentType.FILTER, RuleChainType.CORE).andExpect(status().isOk()), new TypeReference<List<ComponentDescriptor>>() {
                 });
 
         Assert.assertNotNull(descriptors);
         Assert.assertTrue(descriptors.size() >= AMOUNT_OF_DEFAULT_FILTER_NODES);
 
         for (ComponentType type : ComponentType.values()) {
-            doGet("/api/components/" + type).andExpect(status().isOk());
+            doGet("/api/components?componentTypes={componentTypes}&ruleChainType={ruleChainType}", type, RuleChainType.CORE).andExpect(status().isOk());
         }
     }
 

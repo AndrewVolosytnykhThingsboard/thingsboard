@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -32,27 +32,50 @@ package org.thingsboard.server.dao.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.validator.HibernateValidator;
+import org.hibernate.validator.HibernateValidatorConfiguration;
+import org.hibernate.validator.cfg.ConstraintMapping;
 import org.thingsboard.server.common.data.BaseData;
+import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.validation.NoXss;
+import org.thingsboard.server.dao.TenantEntityDao;
 import org.thingsboard.server.dao.exception.DataValidationException;
 
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Slf4j
 public abstract class DataValidator<D extends BaseData<?>> {
     private static final Pattern EMAIL_PATTERN =
             Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$", Pattern.CASE_INSENSITIVE);
 
+    private static Validator fieldsValidator;
+
+    static {
+        initializeFieldsValidator();
+    }
+
     public void validate(D data, Function<D, TenantId> tenantIdFunction) {
         try {
             if (data == null) {
                 throw new DataValidationException("Data object can't be null!");
             }
+
+            List<String> validationErrors = validateFields(data);
+            if (!validationErrors.isEmpty()) {
+                throw new IllegalArgumentException("Validation error: " + String.join(", ", validationErrors));
+            }
+
             TenantId tenantId = tenantIdFunction.apply(data);
             validateDataImpl(tenantId, data);
             if (data.getId() == null) {
@@ -94,6 +117,27 @@ public abstract class DataValidator<D extends BaseData<?>> {
         return emailMatcher.matches();
     }
 
+    private List<String> validateFields(D data) {
+        Set<ConstraintViolation<D>> constraintsViolations = fieldsValidator.validate(data);
+        return constraintsViolations.stream()
+                .map(ConstraintViolation::getMessage)
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    protected void validateNumberOfEntitiesPerTenant(TenantId tenantId,
+                                                     TenantEntityDao tenantEntityDao,
+                                                     long maxEntities,
+                                                     EntityType entityType) {
+        if (maxEntities > 0) {
+            long currentEntitiesCount = tenantEntityDao.countByTenantId(tenantId);
+            if (currentEntitiesCount >= maxEntities) {
+                throw new DataValidationException(String.format("Can't create more then %d %ss!",
+                        maxEntities, entityType.name().toLowerCase().replaceAll("_", " ")));
+            }
+        }
+    }
+
     protected static void validateJsonStructure(JsonNode expectedNode, JsonNode actualNode) {
         Set<String> expectedFields = new HashSet<>();
         Iterator<String> fieldsIterator = expectedNode.fieldNames();
@@ -110,5 +154,14 @@ public abstract class DataValidator<D extends BaseData<?>> {
         if (!expectedFields.containsAll(actualFields) || !actualFields.containsAll(expectedFields)) {
             throw new DataValidationException("Provided json structure is different from stored one '" + actualNode + "'!");
         }
+    }
+
+    private static void initializeFieldsValidator() {
+        HibernateValidatorConfiguration validatorConfiguration = Validation.byProvider(HibernateValidator.class).configure();
+        ConstraintMapping constraintMapping = validatorConfiguration.createConstraintMapping();
+        constraintMapping.constraintDefinition(NoXss.class).validatedBy(NoXssValidator.class);
+        validatorConfiguration.addMapping(constraintMapping);
+
+        fieldsValidator = validatorConfiguration.buildValidatorFactory().getValidator();
     }
 }

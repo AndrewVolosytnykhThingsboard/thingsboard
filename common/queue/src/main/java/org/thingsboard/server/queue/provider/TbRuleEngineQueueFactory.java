@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -47,7 +47,7 @@ import org.thingsboard.server.queue.settings.TbRuleEngineQueueConfiguration;
  * Responsible for initialization of various Producers and Consumers used by TB Core Node.
  * Implementation Depends on the queue queue.type from yml or TB_QUEUE_TYPE environment variable
  */
-public interface TbRuleEngineQueueFactory {
+public interface TbRuleEngineQueueFactory extends TbUsageStatsClientQueueFactory {
 
     /**
      * Used to push messages to instances of TB Transport Service

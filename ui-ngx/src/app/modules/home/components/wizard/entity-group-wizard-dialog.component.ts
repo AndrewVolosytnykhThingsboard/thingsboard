@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -194,9 +194,9 @@ export class EntityGroupWizardDialogComponent extends
 
   private createEntityGroup(): Observable<EntityGroupInfo> {
     const entityGroup = {
-      name: this.entityGroupWizardFormGroup.get('name').value,
+      name: this.entityGroupWizardFormGroup.get('name').value.trim(),
       additionalInfo: {
-        description: this.entityGroupWizardFormGroup.get('description').value
+        description: this.entityGroupWizardFormGroup.get('description').value.trim()
       },
       customerId: null
     } as EntityGroupInfo;

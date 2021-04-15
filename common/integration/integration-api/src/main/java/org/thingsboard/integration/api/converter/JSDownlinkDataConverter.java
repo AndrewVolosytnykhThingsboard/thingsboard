@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -52,7 +52,7 @@ public class JSDownlinkDataConverter extends AbstractDownlinkDataConverter {
     public void init(Converter configuration) {
         super.init(configuration);
         String encoder = configuration.getConfiguration().get("encoder").asText();
-        this.evaluator = new JSDownlinkEvaluator(jsInvokeService, configuration.getId(), encoder);
+        this.evaluator = new JSDownlinkEvaluator(configuration.getTenantId(), jsInvokeService, configuration.getId(), encoder);
     }
 
     @Override

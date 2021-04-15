@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -72,6 +72,7 @@ public class DatabaseHelper {
     public static final String DASHBOARD = "dashboard";
     public static final String ENTITY_VIEWS = "entity_views";
     public static final String ENTITY_VIEW = "entity_view";
+    public static final String RULE_CHAIN = "rule_chain";
     public static final String ID = "id";
     public static final String TITLE = "title";
     public static final String TYPE = "type";

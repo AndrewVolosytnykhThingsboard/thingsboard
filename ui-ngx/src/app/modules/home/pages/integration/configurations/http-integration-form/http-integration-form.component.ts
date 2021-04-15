@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -37,6 +37,9 @@ import { AppState } from '@app/core/core.state';
 import { TranslateService } from '@ngx-translate/core';
 import { disableFields, enableFields } from '../../integration-utils';
 import { IntegrationFormComponent } from '@home/pages/integration/configurations/integration-form.component';
+import { loriotCredentialType, loriotCredentialTypes } from '@home/pages/integration/integration-forms-templates';
+import { FormGroup, Validators } from '@angular/forms';
+import { merge } from 'rxjs';
 
 @Component({
   selector: 'tb-http-integration-form',
@@ -50,12 +53,18 @@ export class HttpIntegrationFormComponent extends IntegrationFormComponent {
 
   integrationTypes = IntegrationType;
 
-  get integrationTypeHttpOrSigfox(): boolean{
-    return this.integrationType === IntegrationType.HTTP || this.integrationType === IntegrationType.SIGFOX;
+  loriotCredentialTypes = loriotCredentialTypes;
+
+  get integrationTypeHttpOrSigfoxOrLoriot(): boolean{
+    return this.integrationType === IntegrationType.HTTP || this.integrationType === IntegrationType.SIGFOX || this.integrationTypeLoriot;
   }
 
   get integrationTypeThingparkOrTpe(): boolean{
     return this.integrationType === IntegrationType.THINGPARK || this.integrationType === IntegrationType.TPE;
+  }
+
+  get integrationTypeLoriot(): boolean{
+    return this.integrationType === IntegrationType.LORIOT;
   }
 
   constructor(protected store: Store<AppState>, private translate: TranslateService) {
@@ -78,7 +87,7 @@ export class HttpIntegrationFormComponent extends IntegrationFormComponent {
       this.integrationBaseUrlChanged();
     });
     this.form.get('enableSecurity').valueChanges.subscribe(() => {
-      if (this.integrationTypeHttpOrSigfox) {
+      if (this.integrationTypeHttpOrSigfoxOrLoriot) {
         this.httpEnableSecurityChanged();
       } else if (this.integrationTypeThingparkOrTpe) {
         this.thingparkEnableSecurityChanged();
@@ -88,6 +97,17 @@ export class HttpIntegrationFormComponent extends IntegrationFormComponent {
       this.form.get('enableSecurityNew').valueChanges.subscribe(() => {
         this.thingparkEnableSecurityNewChanged();
       });
+    } else if (this.integrationTypeLoriot) {
+      this.form.get('server').valueChanges.subscribe((val) => {
+        this.form.get('loriotDownlinkUrl').setValue(`https://${val}.loriot.io/1/rest`);
+      });
+      merge(this.form.get('sendDownlink').valueChanges, this.form.get('createLoriotOutput').valueChanges).subscribe(() => {
+        this.loriotEnableFields();
+      });
+      this.form.get('credentials.type').valueChanges.subscribe((type) => {
+        this.loriotCredentialsTypeChanged(type);
+      });
+      this.loriotCredentialsTypeChanged(this.form.get('credentials.type').value);
     }
     this.resetFields();
   }
@@ -96,6 +116,7 @@ export class HttpIntegrationFormComponent extends IntegrationFormComponent {
     this.httpEnableSecurityChanged();
     this.thingparkEnableSecurityChanged();
     this.thingparkEnableSecurityNewChanged();
+    this.loriotEnableFields();
   }
 
   httpEnableSecurityChanged = () => {
@@ -104,33 +125,56 @@ export class HttpIntegrationFormComponent extends IntegrationFormComponent {
       if (!headersFilter.value) {
         headersFilter.patchValue({});
       }
+      if (this.integrationTypeLoriot) {
+        enableFields(this.form, ['headersFilter']);
+      }
     } else {
       headersFilter.patchValue({});
+      if (this.integrationTypeLoriot) {
+        disableFields(this.form, ['headersFilter']);
+      }
     }
-  };
+  }
 
   thingparkEnableSecurityChanged = () => {
     const fields = ['asId', 'asKey', 'maxTimeDiffInSeconds'];
-    if (!this.form.get('enableSecurity').value || this.integrationTypeHttpOrSigfox) {
+    if (!this.form.get('enableSecurity').value || this.integrationTypeHttpOrSigfoxOrLoriot) {
       this.form.get('enableSecurityNew').patchValue(false);
       disableFields(this.form, fields, false);
     } else {
       enableFields(this.form, fields);
     }
-  };
+  }
 
   thingparkEnableSecurityNewChanged = () => {
     const fields = [ 'clientIdNew', 'asIdNew', 'clientSecret'];
     if (!this.form.get('enableSecurityNew').value) {
       disableFields(this.form, fields, false);
-      if (this.form.get('enableSecurity').value && !this.integrationTypeHttpOrSigfox) {
+      if (this.form.get('enableSecurity').value && !this.integrationTypeHttpOrSigfoxOrLoriot) {
         enableFields(this.form, ['asId']);
       }
     } else {
       enableFields(this.form, fields);
       disableFields(this.form, ['asId'], false);
     }
-  };
+  }
+
+  private loriotEnableFields() {
+    const fields = ['appId',  'server'];
+    const createAppFields = ['credentials.email', 'credentials.password', 'credentials.token'];
+    const downlinkFields = ['loriotDownlinkUrl', 'token'];
+
+    const createLoriotOutput = this.form.get('createLoriotOutput').value;
+    const sendDownlink = this.form.get('sendDownlink').value;
+    if (createLoriotOutput || sendDownlink) {
+      enableFields(this.form, fields);
+    } else {
+      disableFields(this.form, fields, false);
+    }
+
+    createLoriotOutput ? enableFields(this.form, createAppFields) : disableFields(this.form, createAppFields, false);
+    sendDownlink ? enableFields(this.form, downlinkFields) : disableFields(this.form, downlinkFields, false);
+  }
 
   onHttpEndpointCopied() {
     this.store.dispatch(new ActionNotificationShow(
@@ -149,5 +193,24 @@ export class HttpIntegrationFormComponent extends IntegrationFormComponent {
     const key = this.routingKey || '';
     url += `/api/v1/integrations/${type}/${key}`;
     this.form.get('httpEndpoint').patchValue(url);
-  };
+  }
+
+  private loriotCredentialsTypeChanged(type: loriotCredentialType) {
+    const form = this.form.get('credentials') as FormGroup;
+    switch (type) {
+      case 'basic':
+        form.get('token').clearValidators();
+        form.get('email').setValidators(Validators.required);
+        form.get('password').setValidators(Validators.required);
+        break;
+      case 'token':
+        form.get('token').setValidators(Validators.required);
+        form.get('email').clearValidators();
+        form.get('password').clearValidators();
+        break;
+    }
+    form.get('token').updateValueAndValidity();
+    form.get('email').updateValueAndValidity();
+    form.get('password').updateValueAndValidity();
+  }
 }

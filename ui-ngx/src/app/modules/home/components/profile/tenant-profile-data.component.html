@@ -2,7 +2,7 @@
 
     ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 
-    Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+    Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 
     NOTICE: All information contained herein is, and remains
     the property of ThingsBoard, Inc. and its suppliers,
@@ -31,9 +31,17 @@
 
 -->
 <form [formGroup]="tenantProfileDataFormGroup" style="padding-bottom: 16px;">
-  <tb-json-object-edit
-    [required]="required"
-    label="{{ 'tenant-profile.data' | translate }}"
-    formControlName="tenantProfileData">
-  </tb-json-object-edit>
+  <mat-expansion-panel [expanded]="true">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <div translate>tenant-profile.profile-configuration</div>
+      </mat-panel-title>
+    </mat-expansion-panel-header>
+    <ng-template matExpansionPanelContent>
+      <tb-tenant-profile-configuration
+        formControlName="configuration"
+        required>
+      </tb-tenant-profile-configuration>
+    </ng-template>
+  </mat-expansion-panel>
 </form>

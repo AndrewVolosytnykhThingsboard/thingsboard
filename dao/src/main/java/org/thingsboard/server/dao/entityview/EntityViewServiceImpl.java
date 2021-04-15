@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -82,6 +82,7 @@ import static org.thingsboard.server.dao.service.Validator.validateId;
 import static org.thingsboard.server.dao.service.Validator.validateIds;
 import static org.thingsboard.server.dao.service.Validator.validatePageLink;
 import static org.thingsboard.server.dao.service.Validator.validateString;
+
 
 /**
  * Created by Victor Basanets on 8/28/2017.
@@ -232,6 +233,7 @@ public class EntityViewServiceImpl extends AbstractEntityService implements Enti
         tenantIdAndEntityId.add(entityId);
 
         Cache cache = cacheManager.getCache(ENTITY_VIEW_CACHE);
+        @SuppressWarnings("unchecked")
         List<EntityView> fromCache = cache.get(tenantIdAndEntityId, List.class);
         if (fromCache != null) {
             return Futures.immediateFuture(fromCache);

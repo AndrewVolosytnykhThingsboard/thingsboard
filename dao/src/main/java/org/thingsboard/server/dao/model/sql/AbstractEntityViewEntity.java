@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -40,6 +40,7 @@ import org.hibernate.annotations.TypeDef;
 import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.common.data.EntityView;
 import org.thingsboard.server.common.data.id.CustomerId;
+import org.thingsboard.server.common.data.id.EdgeId;
 import org.thingsboard.server.common.data.id.EntityIdFactory;
 import org.thingsboard.server.common.data.id.EntityViewId;
 import org.thingsboard.server.common.data.id.TenantId;
@@ -57,10 +58,6 @@ import java.io.IOException;
 import java.util.UUID;
 
 import static org.thingsboard.server.dao.model.ModelConstants.ENTITY_TYPE_PROPERTY;
-
-/**
- * Created by Victor Basanets on 8/30/2017.
- */
 
 @Data
 @EqualsAndHashCode(callSuper = true)

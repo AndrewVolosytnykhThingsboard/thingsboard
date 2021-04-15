@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -83,6 +83,7 @@ public enum EntityField {
         defaultFieldsByEntityType.put(EntityType.ASSET, new EntityField[]{CREATED_TIME, NAME, TYPE});
         defaultFieldsByEntityType.put(EntityType.DEVICE, new EntityField[]{CREATED_TIME, NAME, DEVICE_PROFILE, LABEL});
         defaultFieldsByEntityType.put(EntityType.ENTITY_VIEW, new EntityField[]{CREATED_TIME, NAME, TYPE});
+        defaultFieldsByEntityType.put(EntityType.EDGE, new EntityField[]{CREATED_TIME, NAME, TYPE, LABEL});
         defaultFieldsByEntityType.put(EntityType.DASHBOARD, new EntityField[]{CREATED_TIME, TITLE});
     }
 

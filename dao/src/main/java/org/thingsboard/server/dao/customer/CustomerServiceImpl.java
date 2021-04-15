@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -36,6 +36,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.data.Customer;
 import org.thingsboard.server.common.data.EntityType;
@@ -47,8 +48,8 @@ import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
-import org.thingsboard.server.common.data.page.TimePageLink;
 import org.thingsboard.server.common.data.role.Role;
+import org.thingsboard.server.common.data.tenant.profile.DefaultTenantProfileConfiguration;
 import org.thingsboard.server.dao.asset.AssetService;
 import org.thingsboard.server.dao.blob.BlobEntityService;
 import org.thingsboard.server.dao.dashboard.DashboardService;
@@ -63,6 +64,7 @@ import org.thingsboard.server.dao.scheduler.SchedulerEventService;
 import org.thingsboard.server.dao.service.DataValidator;
 import org.thingsboard.server.dao.service.PaginatedRemover;
 import org.thingsboard.server.dao.service.Validator;
+import org.thingsboard.server.dao.tenant.TbTenantProfileCache;
 import org.thingsboard.server.dao.tenant.TenantDao;
 import org.thingsboard.server.dao.user.UserService;
 import org.thingsboard.server.dao.wl.WhiteLabelingService;
@@ -123,6 +125,10 @@ public class CustomerServiceImpl extends AbstractEntityService implements Custom
     @Autowired
     private GroupPermissionService groupPermissionService;
 
+    @Autowired
+    @Lazy
+    private TbTenantProfileCache tenantProfileCache;
+
     @Override
     public Customer findCustomerById(TenantId tenantId, CustomerId customerId) {
         log.trace("Executing findCustomerById [{}]", customerId);
@@ -167,6 +173,7 @@ public class CustomerServiceImpl extends AbstractEntityService implements Custom
             entityGroupService.createEntityGroupAll(savedCustomer.getTenantId(), savedCustomer.getId(), EntityType.ASSET);
             entityGroupService.createEntityGroupAll(savedCustomer.getTenantId(), savedCustomer.getId(), EntityType.DEVICE);
             entityGroupService.createEntityGroupAll(savedCustomer.getTenantId(), savedCustomer.getId(), EntityType.ENTITY_VIEW);
+            entityGroupService.createEntityGroupAll(savedCustomer.getTenantId(), savedCustomer.getId(), EntityType.EDGE);
             entityGroupService.createEntityGroupAll(savedCustomer.getTenantId(), savedCustomer.getId(), EntityType.DASHBOARD);
             entityGroupService.createEntityGroupAll(savedCustomer.getTenantId(), savedCustomer.getId(), EntityType.USER);
 
@@ -326,6 +333,11 @@ public class CustomerServiceImpl extends AbstractEntityService implements Custom
 
                 @Override
                 protected void validateCreate(TenantId tenantId, Customer customer) {
+                    DefaultTenantProfileConfiguration profileConfiguration =
+                            (DefaultTenantProfileConfiguration)tenantProfileCache.get(tenantId).getProfileData().getConfiguration();
+                    long maxCustomers = profileConfiguration.getMaxCustomers();
+
+                    validateNumberOfEntitiesPerTenant(tenantId, customerDao, maxCustomers, EntityType.CUSTOMER);
                     customerDao.findCustomersByTenantIdAndTitle(customer.getTenantId().getId(), customer.getTitle()).ifPresent(
                             c -> {
                                 throw new DataValidationException("Customer with such title already exists!");

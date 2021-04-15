@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -34,6 +34,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 import org.thingsboard.server.common.data.id.CustomerId;
+import org.thingsboard.server.common.data.validation.NoXss;
 
 /**
  * Created by igor on 2/27/18.
@@ -46,6 +47,7 @@ public class ShortCustomerInfo {
     private CustomerId customerId;
 
     @Getter @Setter
+    @NoXss
     private String title;
 
     @Getter @Setter

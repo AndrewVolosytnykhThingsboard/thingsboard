@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -36,15 +36,26 @@ import { Observable, ReplaySubject, Subject } from 'rxjs';
 import { EntityId } from '@shared/models/id/entity-id';
 import { map } from 'rxjs/operators';
 import { NgZone } from '@angular/core';
-import { AlarmData, AlarmDataQuery, EntityData, EntityDataQuery, EntityKey } from '@shared/models/query/query.models';
+import {
+  AlarmData,
+  AlarmDataQuery, EntityCountQuery,
+  EntityData,
+  EntityDataQuery,
+  EntityKey,
+  TsValue
+} from '@shared/models/query/query.models';
 import { PageData } from '@shared/models/page/page-data';
+import { alarmFields } from '@shared/models/alarm.models';
+import { entityFields } from '@shared/models/entity.models';
+import { isUndefined } from '@core/utils';
 
 export enum DataKeyType {
   timeseries = 'timeseries',
   attribute = 'attribute',
   function = 'function',
   alarm = 'alarm',
-  entityField = 'entityField'
+  entityField = 'entityField',
+  count = 'count'
 }
 
 export enum LatestTelemetry {
@@ -94,6 +105,15 @@ export interface AttributeData {
   lastUpdateTs?: number;
   key: string;
   value: any;
+}
+
+export interface TimeseriesData {
+  [key: string]: Array<TsValue>;
+}
+
+export enum DataSortOrder {
+  ASC = 'ASC',
+  DESC = 'DESC'
 }
 
 export interface WebsocketCmd {
@@ -180,6 +200,11 @@ export class EntityDataCmd implements WebsocketCmd {
   }
 }
 
+export class EntityCountCmd implements WebsocketCmd {
+  cmdId: number;
+  query?: EntityCountQuery;
+}
+
 export class AlarmDataCmd implements WebsocketCmd {
   cmdId: number;
   query?: AlarmDataQuery;
@@ -190,6 +215,10 @@ export class AlarmDataCmd implements WebsocketCmd {
 }
 
 export class EntityDataUnsubscribeCmd implements WebsocketCmd {
+  cmdId: number;
+}
+
+export class EntityCountUnsubscribeCmd implements WebsocketCmd {
   cmdId: number;
 }
 
@@ -205,6 +234,8 @@ export class TelemetryPluginCmdsWrapper {
   entityDataUnsubscribeCmds: Array<EntityDataUnsubscribeCmd>;
   alarmDataCmds: Array<AlarmDataCmd>;
   alarmDataUnsubscribeCmds: Array<AlarmDataUnsubscribeCmd>;
+  entityCountCmds: Array<EntityCountCmd>;
+  entityCountUnsubscribeCmds: Array<EntityCountUnsubscribeCmd>;
 
   constructor() {
     this.attrSubCmds = [];
@@ -214,6 +245,8 @@ export class TelemetryPluginCmdsWrapper {
     this.entityDataUnsubscribeCmds = [];
     this.alarmDataCmds = [];
     this.alarmDataUnsubscribeCmds = [];
+    this.entityCountCmds = [];
+    this.entityCountUnsubscribeCmds = [];
   }
 
   public hasCommands(): boolean {
@@ -223,7 +256,9 @@ export class TelemetryPluginCmdsWrapper {
       this.entityDataCmds.length > 0 ||
       this.entityDataUnsubscribeCmds.length > 0 ||
       this.alarmDataCmds.length > 0 ||
-      this.alarmDataUnsubscribeCmds.length > 0;
+      this.alarmDataUnsubscribeCmds.length > 0 ||
+      this.entityCountCmds.length > 0 ||
+      this.entityCountUnsubscribeCmds.length > 0;
   }
 
   public clear() {
@@ -234,6 +269,8 @@ export class TelemetryPluginCmdsWrapper {
     this.entityDataUnsubscribeCmds.length = 0;
     this.alarmDataCmds.length = 0;
     this.alarmDataUnsubscribeCmds.length = 0;
+    this.entityCountCmds.length = 0;
+    this.entityCountUnsubscribeCmds.length = 0;
   }
 
   public preparePublishCommands(maxCommands: number): TelemetryPluginCmdsWrapper {
@@ -252,6 +289,10 @@ export class TelemetryPluginCmdsWrapper {
     preparedWrapper.alarmDataCmds = this.popCmds(this.alarmDataCmds, leftCount);
     leftCount -= preparedWrapper.alarmDataCmds.length;
     preparedWrapper.alarmDataUnsubscribeCmds = this.popCmds(this.alarmDataUnsubscribeCmds, leftCount);
+    leftCount -= preparedWrapper.alarmDataUnsubscribeCmds.length;
+    preparedWrapper.entityCountCmds = this.popCmds(this.entityCountCmds, leftCount);
+    leftCount -= preparedWrapper.entityCountCmds.length;
+    preparedWrapper.entityCountUnsubscribeCmds = this.popCmds(this.entityCountUnsubscribeCmds, leftCount);
     return preparedWrapper;
   }
 
@@ -279,40 +320,54 @@ export interface SubscriptionUpdateMsg extends SubscriptionDataHolder {
   errorMsg: string;
 }
 
-export enum DataUpdateType {
+export enum CmdUpdateType {
   ENTITY_DATA = 'ENTITY_DATA',
-  ALARM_DATA = 'ALARM_DATA'
+  ALARM_DATA = 'ALARM_DATA',
+  COUNT_DATA = 'COUNT_DATA'
 }
 
-export interface DataUpdateMsg<T> {
+export interface CmdUpdateMsg {
   cmdId: number;
-  data?: PageData<T>;
-  update?: Array<T>;
   errorCode: number;
   errorMsg: string;
-  dataUpdateType: DataUpdateType;
+  cmdUpdateType: CmdUpdateType;
+}
+
+export interface DataUpdateMsg<T> extends CmdUpdateMsg {
+  data?: PageData<T>;
+  update?: Array<T>;
 }
 
 export interface EntityDataUpdateMsg extends DataUpdateMsg<EntityData> {
-  dataUpdateType: DataUpdateType.ENTITY_DATA;
+  cmdUpdateType: CmdUpdateType.ENTITY_DATA;
 }
 
 export interface AlarmDataUpdateMsg extends DataUpdateMsg<AlarmData> {
-  dataUpdateType: DataUpdateType.ALARM_DATA;
+  cmdUpdateType: CmdUpdateType.ALARM_DATA;
   allowedEntities: number;
   totalEntities: number;
 }
 
-export type WebsocketDataMsg = AlarmDataUpdateMsg | EntityDataUpdateMsg | SubscriptionUpdateMsg;
+export interface EntityCountUpdateMsg extends CmdUpdateMsg {
+  cmdUpdateType: CmdUpdateType.COUNT_DATA;
+  count: number;
+}
+
+export type WebsocketDataMsg = AlarmDataUpdateMsg | EntityDataUpdateMsg | EntityCountUpdateMsg | SubscriptionUpdateMsg;
 
 export function isEntityDataUpdateMsg(message: WebsocketDataMsg): message is EntityDataUpdateMsg {
-  const updateMsg = (message as DataUpdateMsg<any>);
-  return updateMsg.cmdId !== undefined && updateMsg.dataUpdateType === DataUpdateType.ENTITY_DATA;
+  const updateMsg = (message as CmdUpdateMsg);
+  return updateMsg.cmdId !== undefined && updateMsg.cmdUpdateType === CmdUpdateType.ENTITY_DATA;
 }
 
 export function isAlarmDataUpdateMsg(message: WebsocketDataMsg): message is AlarmDataUpdateMsg {
-  const updateMsg = (message as DataUpdateMsg<any>);
-  return updateMsg.cmdId !== undefined && updateMsg.dataUpdateType === DataUpdateType.ALARM_DATA;
+  const updateMsg = (message as CmdUpdateMsg);
+  return updateMsg.cmdId !== undefined && updateMsg.cmdUpdateType === CmdUpdateType.ALARM_DATA;
+}
+
+export function isEntityCountUpdateMsg(message: WebsocketDataMsg): message is EntityCountUpdateMsg {
+  const updateMsg = (message as CmdUpdateMsg);
+  return updateMsg.cmdId !== undefined && updateMsg.cmdUpdateType === CmdUpdateType.COUNT_DATA;
 }
 
 export class SubscriptionUpdate implements SubscriptionUpdateMsg {
@@ -364,27 +419,72 @@ export class SubscriptionUpdate implements SubscriptionUpdateMsg {
   }
 }
 
-export class DataUpdate<T> implements DataUpdateMsg<T> {
+export class CmdUpdate implements CmdUpdateMsg {
   cmdId: number;
   errorCode: number;
   errorMsg: string;
-  data?: PageData<T>;
-  update?: Array<T>;
-  dataUpdateType: DataUpdateType;
+  cmdUpdateType: CmdUpdateType;
 
-  constructor(msg: DataUpdateMsg<T>) {
+  constructor(msg: CmdUpdateMsg) {
     this.cmdId = msg.cmdId;
     this.errorCode = msg.errorCode;
     this.errorMsg = msg.errorMsg;
+    this.cmdUpdateType = msg.cmdUpdateType;
+  }
+}
+
+export class DataUpdate<T> extends CmdUpdate implements DataUpdateMsg<T> {
+  data?: PageData<T>;
+  update?: Array<T>;
+
+  constructor(msg: DataUpdateMsg<T>) {
+    super(msg);
     this.data = msg.data;
     this.update = msg.update;
-    this.dataUpdateType = msg.dataUpdateType;
   }
 }
 
 export class EntityDataUpdate extends DataUpdate<EntityData> {
   constructor(msg: EntityDataUpdateMsg) {
     super(msg);
+  }
+
+  public prepareData(tsOffset: number) {
+    if (this.data) {
+      this.processEntityData(this.data.data, tsOffset);
+    }
+    if (this.update) {
+      this.processEntityData(this.update, tsOffset);
+    }
+  }
+
+  private processEntityData(data: Array<EntityData>, tsOffset: number) {
+    for (const entityData of data) {
+      if (entityData.timeseries) {
+        for (const key of Object.keys(entityData.timeseries)) {
+          const tsValues = entityData.timeseries[key];
+          for (const tsValue of tsValues) {
+            if (tsValue.ts) {
+              tsValue.ts += tsOffset;
+            }
+          }
+        }
+      }
+      if (entityData.latest) {
+        for (const entityKeyType of Object.keys(entityData.latest)) {
+          const keyTypeValues = entityData.latest[entityKeyType];
+          for (const key of Object.keys(keyTypeValues)) {
+            const tsValue = keyTypeValues[key];
+            if (tsValue.ts) {
+              tsValue.ts += tsOffset;
+            }
+            if (key === entityFields.createdTime.keyName && tsValue.value) {
+              tsValue.value = (Number(tsValue.value) + tsOffset) + '';
+            }
+          }
+        }
+      }
+    }
   }
 }
 
@@ -396,6 +496,57 @@ export class AlarmDataUpdate extends DataUpdate<AlarmData> {
     super(msg);
     this.allowedEntities = msg.allowedEntities;
     this.totalEntities = msg.totalEntities;
+  }
+
+  public prepareData(tsOffset: number) {
+    if (this.data) {
+      this.processAlarmData(this.data.data, tsOffset);
+    }
+    if (this.update) {
+      this.processAlarmData(this.update, tsOffset);
+    }
+  }
+
+  private processAlarmData(data: Array<AlarmData>, tsOffset: number) {
+    for (const alarmData of data) {
+      alarmData.createdTime += tsOffset;
+      if (alarmData.ackTs) {
+        alarmData.ackTs += tsOffset;
+      }
+      if (alarmData.clearTs) {
+        alarmData.clearTs += tsOffset;
+      }
+      if (alarmData.endTs) {
+        alarmData.endTs += tsOffset;
+      }
+      if (alarmData.latest) {
+        for (const entityKeyType of Object.keys(alarmData.latest)) {
+          const keyTypeValues = alarmData.latest[entityKeyType];
+          for (const key of Object.keys(keyTypeValues)) {
+            const tsValue = keyTypeValues[key];
+            if (tsValue.ts) {
+              tsValue.ts += tsOffset;
+            }
+            if (key in [entityFields.createdTime.keyName,
+                        alarmFields.startTime.keyName,
+                        alarmFields.endTime.keyName,
+                        alarmFields.ackTime.keyName,
+                        alarmFields.clearTime.keyName] && tsValue.value) {
+              tsValue.value = (Number(tsValue.value) + tsOffset) + '';
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+export class EntityCountUpdate extends CmdUpdate {
+  count: number;
+
+  constructor(msg: EntityCountUpdateMsg) {
+    super(msg);
+    this.count = msg.count;
   }
 }
 
@@ -410,13 +561,17 @@ export class TelemetrySubscriber {
   private dataSubject = new ReplaySubject<SubscriptionUpdate>(1);
   private entityDataSubject = new ReplaySubject<EntityDataUpdate>(1);
   private alarmDataSubject = new ReplaySubject<AlarmDataUpdate>(1);
+  private entityCountSubject = new ReplaySubject<EntityCountUpdate>(1);
   private reconnectSubject = new Subject();
+
+  private tsOffset = undefined;
 
   public subscriptionCommands: Array<WebsocketCmd>;
 
   public data$ = this.dataSubject.asObservable();
   public entityData$ = this.entityDataSubject.asObservable();
   public alarmData$ = this.alarmDataSubject.asObservable();
+  public entityCount$ = this.entityCountSubject.asObservable();
   public reconnect$ = this.reconnectSubject.asObservable();
 
   public static createEntityAttributesSubscription(telemetryService: TelemetryService,
@@ -460,7 +615,18 @@ export class TelemetrySubscriber {
     this.dataSubject.complete();
     this.entityDataSubject.complete();
     this.alarmDataSubject.complete();
+    this.entityCountSubject.complete();
     this.reconnectSubject.complete();
+  }
+
+  public setTsOffset(tsOffset: number): boolean {
+    if (this.tsOffset !== tsOffset) {
+      const changed = !isUndefined(this.tsOffset);
+      this.tsOffset = tsOffset;
+      return changed;
+    } else {
+      return false;
+    }
   }
 
   public onData(message: SubscriptionUpdate) {
@@ -486,6 +652,9 @@ export class TelemetrySubscriber {
   }
 
   public onEntityData(message: EntityDataUpdate) {
+    if (this.tsOffset) {
+      message.prepareData(this.tsOffset);
+    }
     if (this.zone) {
       this.zone.run(
         () => {
@@ -498,6 +667,9 @@ export class TelemetrySubscriber {
   }
 
   public onAlarmData(message: AlarmDataUpdate) {
+    if (this.tsOffset) {
+      message.prepareData(this.tsOffset);
+    }
     if (this.zone) {
       this.zone.run(
         () => {
@@ -506,6 +678,18 @@ export class TelemetrySubscriber {
       );
     } else {
       this.alarmDataSubject.next(message);
+    }
+  }
+
+  public onEntityCount(message: EntityCountUpdate) {
+    if (this.zone) {
+      this.zone.run(
+        () => {
+          this.entityCountSubject.next(message);
+        }
+      );
+    } else {
+      this.entityCountSubject.next(message);
     }
   }
 

@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -193,6 +193,7 @@ public class ModelConstants {
     public static final String DEVICE_PROFILE_DESCRIPTION_PROPERTY = "description";
     public static final String DEVICE_PROFILE_IS_DEFAULT_PROPERTY = "is_default";
     public static final String DEVICE_PROFILE_DEFAULT_RULE_CHAIN_ID_PROPERTY = "default_rule_chain_id";
+    public static final String DEVICE_PROFILE_DEFAULT_QUEUE_NAME_PROPERTY = "default_queue_name";
     public static final String DEVICE_PROFILE_PROVISION_DEVICE_KEY = "provision_device_key";
 
     /**
@@ -369,6 +370,7 @@ public class ModelConstants {
     public static final String WIDGETS_BUNDLE_ALIAS_PROPERTY = ALIAS_PROPERTY;
     public static final String WIDGETS_BUNDLE_TITLE_PROPERTY = TITLE_PROPERTY;
     public static final String WIDGETS_BUNDLE_IMAGE_PROPERTY = "image";
+    public static final String WIDGETS_BUNDLE_DESCRIPTION = "description";
 
     public static final String WIDGETS_BUNDLE_BY_TENANT_AND_SEARCH_TEXT_COLUMN_FAMILY_NAME = "widgets_bundle_by_tenant_and_search_text";
     public static final String WIDGETS_BUNDLE_BY_TENANT_AND_ALIAS_COLUMN_FAMILY_NAME = "widgets_bundle_by_tenant_and_alias";
@@ -381,6 +383,8 @@ public class ModelConstants {
     public static final String WIDGET_TYPE_BUNDLE_ALIAS_PROPERTY = "bundle_alias";
     public static final String WIDGET_TYPE_ALIAS_PROPERTY = ALIAS_PROPERTY;
     public static final String WIDGET_TYPE_NAME_PROPERTY = "name";
+    public static final String WIDGET_TYPE_IMAGE_PROPERTY = "image";
+    public static final String WIDGET_TYPE_DESCRIPTION_PROPERTY = "description";
     public static final String WIDGET_TYPE_DESCRIPTOR_PROPERTY = "descriptor";
 
     public static final String WIDGET_TYPE_BY_TENANT_AND_ALIASES_COLUMN_FAMILY_NAME = "widget_type_by_tenant_and_aliases";
@@ -434,11 +438,13 @@ public class ModelConstants {
     public static final String RULE_CHAIN_COLUMN_FAMILY_NAME = "rule_chain";
     public static final String RULE_CHAIN_TENANT_ID_PROPERTY = TENANT_ID_PROPERTY;
     public static final String RULE_CHAIN_NAME_PROPERTY = "name";
+    public static final String RULE_CHAIN_TYPE_PROPERTY = "type";
     public static final String RULE_CHAIN_FIRST_RULE_NODE_ID_PROPERTY = "first_rule_node_id";
     public static final String RULE_CHAIN_ROOT_PROPERTY = "root";
     public static final String RULE_CHAIN_CONFIGURATION_PROPERTY = "configuration";
 
     public static final String RULE_CHAIN_BY_TENANT_AND_SEARCH_TEXT_COLUMN_FAMILY_NAME = "rule_chain_by_tenant_and_search_text";
+    public static final String RULE_CHAIN_BY_TENANT_BY_TYPE_AND_SEARCH_TEXT_COLUMN_FAMILY_NAME = "rule_chain_by_tenant_by_type_and_search_text";
 
     /**
      * Cassandra rule node constants.
@@ -448,6 +454,15 @@ public class ModelConstants {
     public static final String RULE_NODE_TYPE_PROPERTY = "type";
     public static final String RULE_NODE_NAME_PROPERTY = "name";
     public static final String RULE_NODE_CONFIGURATION_PROPERTY = "configuration";
+
+    /**
+     * Rule node state constants.
+     */
+    public static final String RULE_NODE_STATE_TABLE_NAME = "rule_node_state";
+    public static final String RULE_NODE_STATE_NODE_ID_PROPERTY = "rule_node_id";
+    public static final String RULE_NODE_STATE_ENTITY_TYPE_PROPERTY = "entity_type";
+    public static final String RULE_NODE_STATE_ENTITY_ID_PROPERTY = "entity_id";
+    public static final String RULE_NODE_STATE_DATA_PROPERTY = "state_data";
 
     /**
      * Cassandra scheduler event constants.
@@ -517,15 +532,6 @@ public class ModelConstants {
     public static final String GROUP_PERMISSION_BY_ROLE_ID_COLUMN_FAMILY_NAME = "group_permission_by_role_id";
 
     /**
-     * Rule node state constants.
-     */
-    public static final String RULE_NODE_STATE_TABLE_NAME = "rule_node_state";
-    public static final String RULE_NODE_STATE_NODE_ID_PROPERTY = "rule_node_id";
-    public static final String RULE_NODE_STATE_ENTITY_TYPE_PROPERTY = "entity_type";
-    public static final String RULE_NODE_STATE_ENTITY_ID_PROPERTY = "entity_id";
-    public static final String RULE_NODE_STATE_DATA_PROPERTY = "state_data";
-
-    /**
      * OAuth2 client registration constants.
      */
     public static final String OAUTH2_TENANT_ID_PROPERTY = TENANT_ID_PROPERTY;
@@ -573,6 +579,69 @@ public class ModelConstants {
     public static final String OAUTH2_TEMPLATE_LOGIN_BUTTON_ICON_PROPERTY = OAUTH2_LOGIN_BUTTON_ICON_PROPERTY;
     public static final String OAUTH2_TEMPLATE_LOGIN_BUTTON_LABEL_PROPERTY = OAUTH2_LOGIN_BUTTON_LABEL_PROPERTY;
     public static final String OAUTH2_TEMPLATE_HELP_LINK_PROPERTY = "help_link";
+
+    /**
+     * Usage Record constants.
+     */
+    public static final String API_USAGE_STATE_TABLE_NAME = "api_usage_state";
+    public static final String API_USAGE_STATE_TENANT_ID_COLUMN = TENANT_ID_PROPERTY;
+    public static final String API_USAGE_STATE_ENTITY_TYPE_COLUMN = ENTITY_TYPE_COLUMN;
+    public static final String API_USAGE_STATE_ENTITY_ID_COLUMN = ENTITY_ID_COLUMN;
+    public static final String API_USAGE_STATE_TRANSPORT_COLUMN = "transport";
+    public static final String API_USAGE_STATE_DB_STORAGE_COLUMN = "db_storage";
+    public static final String API_USAGE_STATE_RE_EXEC_COLUMN = "re_exec";
+    public static final String API_USAGE_STATE_JS_EXEC_COLUMN = "js_exec";
+    public static final String API_USAGE_STATE_EMAIL_EXEC_COLUMN = "email_exec";
+    public static final String API_USAGE_STATE_SMS_EXEC_COLUMN = "sms_exec";
+
+    /**
+     * Resource constants.
+     */
+    public static final String RESOURCE_TABLE_NAME = "resource";
+    public static final String RESOURCE_TENANT_ID_COLUMN = TENANT_ID_COLUMN;
+    public static final String RESOURCE_TYPE_COLUMN = "resource_type";
+    public static final String RESOURCE_KEY_COLUMN = "resource_key";
+    public static final String RESOURCE_TITLE_COLUMN = TITLE_PROPERTY;
+    public static final String RESOURCE_FILE_NAME_COLUMN = "file_name";
+    public static final String RESOURCE_DATA_COLUMN = "data";
+
+    /**
+     * Edge constants.
+     */
+    public static final String EDGE_COLUMN_FAMILY_NAME = "edge";
+    public static final String EDGE_TENANT_ID_PROPERTY = TENANT_ID_PROPERTY;
+    public static final String EDGE_CUSTOMER_ID_PROPERTY = CUSTOMER_ID_PROPERTY;
+    public static final String EDGE_ROOT_RULE_CHAIN_ID_PROPERTY = "root_rule_chain_id";
+    public static final String EDGE_NAME_PROPERTY = "name";
+    public static final String EDGE_LABEL_PROPERTY = "label";
+    public static final String EDGE_TYPE_PROPERTY = "type";
+    public static final String EDGE_ADDITIONAL_INFO_PROPERTY = ADDITIONAL_INFO_PROPERTY;
+    public static final String EDGE_BY_TENANT_AND_SEARCH_TEXT_COLUMN_FAMILY_NAME = "edge_by_tenant_and_search_text";
+    public static final String EDGE_BY_TENANT_BY_TYPE_AND_SEARCH_TEXT_COLUMN_FAMILY_NAME = "edge_by_tenant_by_type_and_search_text";
+    public static final String EDGE_BY_CUSTOMER_AND_SEARCH_TEXT_COLUMN_FAMILY_NAME = "edge_by_customer_and_search_text";
+    public static final String EDGE_BY_CUSTOMER_BY_TYPE_AND_SEARCH_TEXT_COLUMN_FAMILY_NAME = "edge_by_customer_by_type_and_search_text";
+    public static final String EDGE_BY_TENANT_AND_NAME_VIEW_NAME = "edge_by_tenant_and_name";
+    public static final String EDGE_BY_ROUTING_KEY_VIEW_NAME = "edge_by_routing_key";
+
+    public static final String EDGE_ROUTING_KEY_PROPERTY = "routing_key";
+    public static final String EDGE_SECRET_PROPERTY = "secret";
+    public static final String EDGE_LICENSE_KEY_PROPERTY = "edge_license_key";
+    public static final String EDGE_CLOUD_ENDPOINT_KEY_PROPERTY = "cloud_endpoint";
+
+    /**
+     * Edge queue constants.
+     */
+    public static final String EDGE_EVENT_COLUMN_FAMILY_NAME = "edge_event";
+    public static final String EDGE_EVENT_TENANT_ID_PROPERTY = TENANT_ID_PROPERTY;
+    public static final String EDGE_EVENT_EDGE_ID_PROPERTY = "edge_id";
+    public static final String EDGE_EVENT_TYPE_PROPERTY = "edge_event_type";
+    public static final String EDGE_EVENT_ACTION_PROPERTY = "edge_event_action";
+    public static final String EDGE_EVENT_UID_PROPERTY = "edge_event_uid";
+    public static final String EDGE_EVENT_ENTITY_ID_PROPERTY = "entity_id";
+    public static final String EDGE_EVENT_BODY_PROPERTY = "body";
+    public static final String EDGE_EVENT_ENTITY_GROUP_ID_PROPERTY = "entity_group_id";
+
+    public static final String EDGE_EVENT_BY_ID_VIEW_NAME = "edge_event_by_id";
 
     /**
      * Cassandra attributes and timeseries constants.

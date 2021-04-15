@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -57,11 +57,13 @@ import org.thingsboard.server.dao.exception.DataValidationException;
 import org.thingsboard.server.dao.grouppermission.GroupPermissionService;
 import org.thingsboard.server.dao.integration.IntegrationService;
 import org.thingsboard.server.dao.role.RoleService;
+import org.thingsboard.server.dao.resource.TbResourceService;
 import org.thingsboard.server.dao.rule.RuleChainService;
 import org.thingsboard.server.dao.scheduler.SchedulerEventService;
 import org.thingsboard.server.dao.service.DataValidator;
 import org.thingsboard.server.dao.service.PaginatedRemover;
 import org.thingsboard.server.dao.service.Validator;
+import org.thingsboard.server.dao.usagerecord.ApiUsageStateService;
 import org.thingsboard.server.dao.user.UserService;
 import org.thingsboard.server.dao.widget.WidgetsBundleService;
 import org.thingsboard.server.dao.wl.WhiteLabelingService;
@@ -103,6 +105,9 @@ public class TenantServiceImpl extends AbstractEntityService implements TenantSe
     private DeviceProfileService deviceProfileService;
 
     @Autowired
+    private ApiUsageStateService apiUsageStateService;
+
+    @Autowired
     private EntityViewService entityViewService;
 
     @Autowired
@@ -134,6 +139,9 @@ public class TenantServiceImpl extends AbstractEntityService implements TenantSe
 
     @Autowired
     private WhiteLabelingService whiteLabelingService;
+
+    @Autowired
+    private TbResourceService resourceService;
 
     @Override
     public Tenant findTenantById(TenantId tenantId) {
@@ -179,11 +187,13 @@ public class TenantServiceImpl extends AbstractEntityService implements TenantSe
             entityGroupService.createEntityGroupAll(savedTenant.getId(), savedTenant.getId(), EntityType.ASSET);
             entityGroupService.createEntityGroupAll(savedTenant.getId(), savedTenant.getId(), EntityType.DEVICE);
             entityGroupService.createEntityGroupAll(savedTenant.getId(), savedTenant.getId(), EntityType.ENTITY_VIEW);
+            entityGroupService.createEntityGroupAll(savedTenant.getId(), savedTenant.getId(), EntityType.EDGE);
             entityGroupService.createEntityGroupAll(savedTenant.getId(), savedTenant.getId(), EntityType.DASHBOARD);
             entityGroupService.createEntityGroupAll(savedTenant.getId(), savedTenant.getId(), EntityType.USER);
 
             entityGroupService.findOrCreateTenantUsersGroup(savedTenant.getId());
             entityGroupService.findOrCreateTenantAdminsGroup(savedTenant.getId());
+            apiUsageStateService.createDefaultApiUsageState(savedTenant.getId());
         }
         return savedTenant;
     }
@@ -200,6 +210,7 @@ public class TenantServiceImpl extends AbstractEntityService implements TenantSe
         assetService.deleteAssetsByTenantId(tenantId);
         deviceService.deleteDevicesByTenantId(tenantId);
         deviceProfileService.deleteDeviceProfilesByTenantId(tenantId);
+        edgeService.deleteEdgesByTenantId(tenantId);
         userService.deleteTenantAdmins(tenantId);
         integrationService.deleteIntegrationsByTenantId(tenantId);
         converterService.deleteConvertersByTenantId(tenantId);
@@ -207,9 +218,11 @@ public class TenantServiceImpl extends AbstractEntityService implements TenantSe
         schedulerEventService.deleteSchedulerEventsByTenantId(tenantId);
         blobEntityService.deleteBlobEntitiesByTenantId(tenantId);
         deleteEntityGroups(tenantId, tenantId);
-        deleteEntityRelations(tenantId,tenantId);
+        deleteEntityRelations(tenantId, tenantId);
         groupPermissionService.deleteGroupPermissionsByTenantId(tenantId);
         roleService.deleteRolesByTenantId(tenantId);
+        apiUsageStateService.deleteApiUsageStateByTenantId(tenantId);
+        resourceService.deleteResourcesByTenantId(tenantId);
         tenantDao.removeById(tenantId, tenantId.getId());
     }
 

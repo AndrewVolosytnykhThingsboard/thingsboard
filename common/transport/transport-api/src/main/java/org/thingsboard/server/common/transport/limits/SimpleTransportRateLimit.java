@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -40,6 +40,11 @@ public class SimpleTransportRateLimit implements TransportRateLimit {
     private final TbRateLimits rateLimit;
     @Getter
     private final String configuration;
+
+    public SimpleTransportRateLimit(String configuration) {
+        this.configuration = configuration;
+        this.rateLimit = new TbRateLimits(configuration);
+    }
 
     @Override
     public boolean tryConsume() {

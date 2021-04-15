@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -83,6 +83,7 @@ export class LegendConfigPanelComponent extends PageComponent implements OnInit 
     this.legendConfigForm = this.fb.group({
       direction: [this.data.legendConfig.direction, []],
       position: [this.data.legendConfig.position, []],
+      sortDataKeys: [this.data.legendConfig.sortDataKeys, []],
       showMin: [this.data.legendConfig.showMin, []],
       showMax: [this.data.legendConfig.showMax, []],
       showAvg: [this.data.legendConfig.showAvg, []],

@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -32,17 +32,23 @@ package org.thingsboard.server.common.data.device.profile;
 
 import lombok.Data;
 import org.thingsboard.server.common.data.alarm.AlarmSeverity;
+import org.thingsboard.server.common.data.validation.NoXss;
 
+import java.io.Serializable;
+import javax.validation.Valid;
 import java.util.List;
-import java.util.Map;
+import java.util.TreeMap;
 
 @Data
-public class DeviceProfileAlarm {
+public class DeviceProfileAlarm implements Serializable {
 
     private String id;
+    @NoXss
     private String alarmType;
 
-    private Map<AlarmSeverity, AlarmRule> createRules;
+    @Valid
+    private TreeMap<AlarmSeverity, AlarmRule> createRules;
+    @Valid
     private AlarmRule clearRule;
 
     // Hidden in advanced settings

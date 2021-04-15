@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -32,6 +32,7 @@ package org.thingsboard.server.dao.rule;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
+import org.thingsboard.server.common.data.id.EdgeId;
 import org.thingsboard.server.common.data.id.RuleChainId;
 import org.thingsboard.server.common.data.id.RuleNodeId;
 import org.thingsboard.server.common.data.id.TenantId;
@@ -42,6 +43,7 @@ import org.thingsboard.server.common.data.rule.RuleChain;
 import org.thingsboard.server.common.data.rule.RuleChainData;
 import org.thingsboard.server.common.data.rule.RuleChainImportResult;
 import org.thingsboard.server.common.data.rule.RuleChainMetaData;
+import org.thingsboard.server.common.data.rule.RuleChainType;
 import org.thingsboard.server.common.data.rule.RuleNode;
 
 import java.util.List;
@@ -75,7 +77,7 @@ public interface RuleChainService {
 
     List<EntityRelation> getRuleNodeRelations(TenantId tenantId, RuleNodeId ruleNodeId);
 
-    PageData<RuleChain> findTenantRuleChains(TenantId tenantId, PageLink pageLink);
+    PageData<RuleChain> findTenantRuleChainsByType(TenantId tenantId, RuleChainType type, PageLink pageLink);
 
     void deleteRuleChainById(TenantId tenantId, RuleChainId ruleChainId);
 
@@ -83,6 +85,22 @@ public interface RuleChainService {
 
     RuleChainData exportTenantRuleChains(TenantId tenantId, PageLink pageLink) throws ThingsboardException;
 
-    List<RuleChainImportResult> importTenantRuleChains(TenantId tenantId, RuleChainData ruleChainData, boolean overwrite);
+    List<RuleChainImportResult> importTenantRuleChains(TenantId tenantId, RuleChainData ruleChainData, RuleChainType type, boolean overwrite);
+
+    RuleChain assignRuleChainToEdge(TenantId tenantId, RuleChainId ruleChainId, EdgeId edgeId);
+
+    RuleChain unassignRuleChainFromEdge(TenantId tenantId, RuleChainId ruleChainId, EdgeId edgeId, boolean remove);
+
+    PageData<RuleChain> findRuleChainsByTenantIdAndEdgeId(TenantId tenantId, EdgeId edgeId, PageLink pageLink);
+
+    RuleChain getEdgeTemplateRootRuleChain(TenantId tenantId);
+
+    boolean setEdgeTemplateRootRuleChain(TenantId tenantId, RuleChainId ruleChainId);
+
+    boolean setAutoAssignToEdgeRuleChain(TenantId tenantId, RuleChainId ruleChainId);
+
+    boolean unsetAutoAssignToEdgeRuleChain(TenantId tenantId, RuleChainId ruleChainId);
+
+    ListenableFuture<List<RuleChain>> findAutoAssignToEdgeRuleChainsByTenantId(TenantId tenantId);
 
 }

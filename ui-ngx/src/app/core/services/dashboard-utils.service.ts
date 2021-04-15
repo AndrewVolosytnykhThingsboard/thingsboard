@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -454,6 +454,12 @@ export class DashboardUtilsService {
       widgetLayout.row = row;
       widgetLayout.col = 0;
     }
+
+    widgetLayout.sizeX = Math.floor(widgetLayout.sizeX);
+    widgetLayout.sizeY = Math.floor(widgetLayout.sizeY);
+    widgetLayout.row = Math.floor(widgetLayout.row);
+    widgetLayout.col = Math.floor(widgetLayout.col);
+
     layout.widgets[widget.id] = widgetLayout;
   }
 

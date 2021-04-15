@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -36,6 +36,7 @@ import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.dao.Dao;
+import org.thingsboard.server.dao.TenantEntityDao;
 
 import java.util.List;
 import java.util.Optional;
@@ -44,7 +45,7 @@ import java.util.UUID;
 /**
  * The Interface CustomerDao.
  */
-public interface CustomerDao extends Dao<Customer> {
+public interface CustomerDao extends Dao<Customer>, TenantEntityDao {
 
     /**
      * Save or update customer object

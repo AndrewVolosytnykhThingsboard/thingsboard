@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -30,7 +30,16 @@
 ///
 
 import { Component, forwardRef, Input, OnInit } from '@angular/core';
-import { ControlValueAccessor, FormBuilder, FormGroup, NG_VALUE_ACCESSOR, Validators } from '@angular/forms';
+import {
+  ControlValueAccessor,
+  FormBuilder,
+  FormGroup,
+  NG_VALIDATORS,
+  NG_VALUE_ACCESSOR,
+  ValidationErrors,
+  Validator,
+  Validators
+} from '@angular/forms';
 import {
   EntityKeyValueType,
   FilterPredicateType,
@@ -48,14 +57,21 @@ import {
       provide: NG_VALUE_ACCESSOR,
       useExisting: forwardRef(() => StringFilterPredicateComponent),
       multi: true
+    },
+    {
+      provide: NG_VALIDATORS,
+      useExisting: forwardRef(() => StringFilterPredicateComponent),
+      multi: true
     }
   ]
 })
-export class StringFilterPredicateComponent implements ControlValueAccessor, OnInit {
+export class StringFilterPredicateComponent implements ControlValueAccessor, Validator, OnInit {
 
   @Input() disabled: boolean;
 
   @Input() allowUserDynamicSource = true;
+
+  @Input() onlyUserDynamicSource = false;
 
   valueTypeEnum = EntityKeyValueType;
 
@@ -103,12 +119,15 @@ export class StringFilterPredicateComponent implements ControlValueAccessor, OnI
     this.stringFilterPredicateFormGroup.get('ignoreCase').patchValue(predicate.ignoreCase, {emitEvent: false});
   }
 
+  validate(c): ValidationErrors {
+    return this.stringFilterPredicateFormGroup.valid ? null : {
+      stringFilterPredicate: {valid: false}
+    };
+  }
+
   private updateModel() {
-    let predicate: StringFilterPredicate = null;
-    if (this.stringFilterPredicateFormGroup.valid) {
-      predicate = this.stringFilterPredicateFormGroup.getRawValue();
-      predicate.type = FilterPredicateType.STRING;
-    }
+    const predicate: StringFilterPredicate = this.stringFilterPredicateFormGroup.getRawValue();
+    predicate.type = FilterPredicateType.STRING;
     this.propagateChange(predicate);
   }
 

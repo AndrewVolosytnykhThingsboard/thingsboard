@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -36,6 +36,7 @@ import org.springframework.stereotype.Component;
 import org.thingsboard.server.gen.transport.TransportProtos.ToCoreMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToRuleEngineMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToTransportMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.ToUsageStatsServiceMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.TransportApiRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.TransportApiResponseMsg;
 import org.thingsboard.server.queue.TbQueueAdmin;
@@ -127,6 +128,11 @@ public class PubSubTransportQueueFactory implements TbTransportQueueFactory {
         return new TbPubSubConsumerTemplate<>(notificationAdmin, pubSubSettings,
                 transportNotificationSettings.getNotificationsTopic() + "." + serviceInfoProvider.getServiceId(),
                 msg -> new TbProtoQueueMsg<>(msg.getKey(), ToTransportMsg.parseFrom(msg.getData()), msg.getHeaders()));
+    }
+
+    @Override
+    public TbQueueProducer<TbProtoQueueMsg<ToUsageStatsServiceMsg>> createToUsageStatsServiceMsgProducer() {
+        return new TbPubSubProducerTemplate<>(coreAdmin, pubSubSettings, coreSettings.getUsageStatsTopic());
     }
 
     @PreDestroy

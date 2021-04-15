@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -38,6 +38,7 @@ import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.UserId;
 import org.thingsboard.server.common.data.security.Authority;
+import org.thingsboard.server.common.data.validation.NoXss;
 
 @EqualsAndHashCode(callSuper = true)
 public class User extends SearchTextBasedWithAdditionalInfo<UserId> implements GroupEntity<UserId> {
@@ -48,7 +49,9 @@ public class User extends SearchTextBasedWithAdditionalInfo<UserId> implements G
     private CustomerId customerId;
     private String email;
     private Authority authority;
+    @NoXss
     private String firstName;
+    @NoXss
     private String lastName;
 
     public User() {

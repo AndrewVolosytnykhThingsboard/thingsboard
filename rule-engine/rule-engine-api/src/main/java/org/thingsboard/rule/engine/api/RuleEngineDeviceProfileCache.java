@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -36,6 +36,7 @@ import org.thingsboard.server.common.data.id.DeviceProfileId;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.TenantId;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -47,7 +48,7 @@ public interface RuleEngineDeviceProfileCache {
 
     DeviceProfile get(TenantId tenantId, DeviceId deviceId);
 
-    void addListener(TenantId tenantId, EntityId listenerId, Consumer<DeviceProfile> listener);
+    void addListener(TenantId tenantId, EntityId listenerId, Consumer<DeviceProfile> profileListener, BiConsumer<DeviceId, DeviceProfile> devicelistener);
 
     void removeListener(TenantId tenantId, EntityId listenerId);
 

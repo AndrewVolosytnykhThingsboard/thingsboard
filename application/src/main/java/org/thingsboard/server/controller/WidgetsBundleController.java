@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -40,6 +40,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.thingsboard.server.common.data.edge.EdgeEventActionType;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.WidgetsBundleId;
@@ -83,7 +84,12 @@ public class WidgetsBundleController extends BaseController {
             }
 
             checkEntity(widgetsBundle.getId(), widgetsBundle, Resource.WIDGETS_BUNDLE, null);
-            return checkNotNull(widgetsBundleService.saveWidgetsBundle(widgetsBundle));
+            WidgetsBundle savedWidgetsBundle = widgetsBundleService.saveWidgetsBundle(widgetsBundle);
+
+            sendEntityNotificationMsg(getTenantId(), savedWidgetsBundle.getId(),
+                    widgetsBundle.getId() == null ? EdgeEventActionType.ADDED : EdgeEventActionType.UPDATED);
+
+            return checkNotNull(savedWidgetsBundle);
         } catch (Exception e) {
             throw handleException(e);
         }
@@ -98,6 +104,9 @@ public class WidgetsBundleController extends BaseController {
             WidgetsBundleId widgetsBundleId = new WidgetsBundleId(toUUID(strWidgetsBundleId));
             checkWidgetsBundleId(widgetsBundleId, Operation.DELETE);
             widgetsBundleService.deleteWidgetsBundle(getTenantId(), widgetsBundleId);
+
+            sendEntityNotificationMsg(getTenantId(), widgetsBundleId, EdgeEventActionType.DELETED);
+
         } catch (Exception e) {
             throw handleException(e);
         }

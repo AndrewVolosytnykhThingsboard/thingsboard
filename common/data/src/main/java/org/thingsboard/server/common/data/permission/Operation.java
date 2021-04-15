@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -39,7 +39,7 @@ import java.util.Set;
 public enum Operation {
     ALL(true), CREATE(true, true, true), READ(true), WRITE(true, false, true), DELETE(true, true, true), RPC_CALL(true),
     READ_CREDENTIALS(true), WRITE_CREDENTIALS(true), READ_ATTRIBUTES(true), WRITE_ATTRIBUTES(true, false, true), READ_TELEMETRY(true), WRITE_TELEMETRY(true, false, true),
-    ADD_TO_GROUP, REMOVE_FROM_GROUP, CHANGE_OWNER, IMPERSONATE, CLAIM_DEVICES, SHARE_GROUP(true), ASSIGN_TO_TENANT;
+    ADD_TO_GROUP, REMOVE_FROM_GROUP, CHANGE_OWNER, IMPERSONATE, CLAIM_DEVICES, SHARE_GROUP(true), ASSIGN_TO_TENANT, ASSIGN_TO_EDGE, UNASSIGN_FROM_EDGE;
 
     public static Set<Operation> defaultEntityOperations = new HashSet<>(Arrays.asList(ALL, READ, WRITE,
             CREATE, DELETE, READ_ATTRIBUTES, WRITE_ATTRIBUTES, READ_TELEMETRY, WRITE_TELEMETRY, CHANGE_OWNER));

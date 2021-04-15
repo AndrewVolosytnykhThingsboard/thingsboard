@@ -1,7 +1,7 @@
 --
 -- ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 --
--- Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+-- Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 --
 -- NOTICE: All information contained herein is, and remains
 -- the property of ThingsBoard, Inc. and its suppliers,
@@ -175,6 +175,7 @@ CREATE TABLE IF NOT EXISTS rule_chain (
     additional_info varchar,
     configuration varchar(10000000),
     name varchar(255),
+    type varchar(255),
     first_rule_node_id uuid,
     root boolean,
     debug_mode boolean,
@@ -218,6 +219,7 @@ CREATE TABLE IF NOT EXISTS device_profile (
     is_default boolean,
     tenant_id uuid,
     default_rule_chain_id uuid,
+    default_queue_name varchar(255),
     provision_device_key varchar,
     CONSTRAINT device_profile_name_unq_key UNIQUE (tenant_id, name),
     CONSTRAINT device_provision_key_unq_key UNIQUE (provision_device_key),
@@ -337,7 +339,9 @@ CREATE TABLE IF NOT EXISTS widget_type (
     bundle_alias varchar(255),
     descriptor varchar(1000000),
     name varchar(255),
-    tenant_id uuid
+    tenant_id uuid,
+    image varchar(1000000),
+    description varchar(255)
 );
 
 CREATE TABLE IF NOT EXISTS widgets_bundle (
@@ -346,7 +350,9 @@ CREATE TABLE IF NOT EXISTS widgets_bundle (
     alias varchar(255),
     search_text varchar(255),
     tenant_id uuid,
-    title varchar(255)
+    title varchar(255),
+    image varchar(1000000),
+    description varchar(255)
 );
 
 CREATE TABLE IF NOT EXISTS entity_group (
@@ -384,7 +390,7 @@ CREATE TABLE IF NOT EXISTS blob_entity (
     content_type varchar(255),
     search_text varchar(255),
     data varchar(10485760),
-        additional_info varchar
+    additional_info varchar
 );
 
 CREATE TABLE IF NOT EXISTS entity_view (
@@ -516,4 +522,99 @@ CREATE TABLE IF NOT EXISTS oauth2_client_registration_template (
     login_button_label varchar(255),
     help_link varchar(255),
     CONSTRAINT oauth2_template_provider_id_unq_key UNIQUE (provider_id)
+);
+
+CREATE TABLE IF NOT EXISTS api_usage_state (
+    id uuid NOT NULL CONSTRAINT usage_record_pkey PRIMARY KEY,
+    created_time bigint NOT NULL,
+    tenant_id uuid,
+    entity_type varchar(32),
+    entity_id uuid,
+    transport varchar(32),
+    db_storage varchar(32),
+    re_exec varchar(32),
+    js_exec varchar(32),
+    email_exec varchar(32),
+    sms_exec varchar(32),
+    CONSTRAINT api_usage_state_unq_key UNIQUE (tenant_id, entity_id)
+);
+
+CREATE TABLE IF NOT EXISTS resource (
+    id uuid NOT NULL CONSTRAINT resource_pkey PRIMARY KEY,
+    created_time bigint NOT NULL,
+    tenant_id uuid NOT NULL,
+    title varchar(255) NOT NULL,
+    resource_type varchar(32) NOT NULL,
+    resource_key varchar(255) NOT NULL,
+    search_text varchar(255),
+    file_name varchar(255) NOT NULL,
+    data varchar,
+    CONSTRAINT resource_unq_key UNIQUE (tenant_id, resource_type, resource_key)
+);
+
+CREATE TABLE IF NOT EXISTS edge (
+    id uuid NOT NULL CONSTRAINT edge_pkey PRIMARY KEY,
+    created_time bigint NOT NULL,
+    additional_info varchar,
+    customer_id uuid,
+    root_rule_chain_id uuid,
+    type varchar(255),
+    name varchar(255),
+    label varchar(255),
+    routing_key varchar(255),
+    secret varchar(255),
+    edge_license_key varchar(30),
+    cloud_endpoint varchar(255),
+    search_text varchar(255),
+    tenant_id uuid,
+    CONSTRAINT edge_name_unq_key UNIQUE (tenant_id, name),
+    CONSTRAINT edge_routing_key_unq_key UNIQUE (routing_key)
+);
+
+-- TODO: voba add entity_group_id to upgrade from CE
+CREATE TABLE IF NOT EXISTS edge_event (
+    id uuid NOT NULL CONSTRAINT edge_event_pkey PRIMARY KEY,
+    created_time bigint NOT NULL,
+    edge_id uuid,
+    edge_event_type varchar(255),
+    edge_event_uid varchar(255),
+    entity_id uuid,
+    edge_event_action varchar(255),
+    body varchar(10000000),
+    tenant_id uuid,
+    entity_group_id uuid,
+    ts bigint NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS edge (
+    id uuid NOT NULL CONSTRAINT edge_pkey PRIMARY KEY,
+    created_time bigint NOT NULL,
+    additional_info varchar,
+    customer_id uuid,
+    root_rule_chain_id uuid,
+    type varchar(255),
+    name varchar(255),
+    label varchar(255),
+    routing_key varchar(255),
+    secret varchar(255),
+    edge_license_key varchar(30),
+    cloud_endpoint varchar(255),
+    search_text varchar(255),
+    tenant_id uuid,
+    CONSTRAINT edge_name_unq_key UNIQUE (tenant_id, name),
+    CONSTRAINT edge_routing_key_unq_key UNIQUE (routing_key)
+);
+
+CREATE TABLE IF NOT EXISTS edge_event (
+    id uuid NOT NULL CONSTRAINT edge_event_pkey PRIMARY KEY,
+    created_time bigint NOT NULL,
+    edge_id uuid,
+    edge_event_type varchar(255),
+    edge_event_uid varchar(255),
+    entity_id uuid,
+    edge_event_action varchar(255),
+    body varchar(10000000),
+    tenant_id uuid,
+    entity_group_id uuid,
+    ts bigint NOT NULL
 );

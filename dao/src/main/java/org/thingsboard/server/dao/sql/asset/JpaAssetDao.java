@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -31,6 +31,7 @@
 package org.thingsboard.server.dao.sql.asset;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Component;
@@ -52,10 +53,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.thingsboard.server.dao.asset.BaseAssetService.TB_SERVICE_QUEUE;
+
 /**
  * Created by Valerii Sosliuk on 5/19/2017.
  */
 @Component
+@Slf4j
 public class JpaAssetDao extends JpaAbstractSearchTextDao<AssetEntity, Asset> implements AssetDao {
 
     @Autowired
@@ -171,5 +175,10 @@ public class JpaAssetDao extends JpaAbstractSearchTextDao<AssetEntity, Asset> im
             }
         }
         return list;
+    }
+
+    @Override
+    public Long countByTenantId(TenantId tenantId) {
+        return assetRepository.countByTenantIdAndTypeIsNot(tenantId.getId(), TB_SERVICE_QUEUE);
     }
 }

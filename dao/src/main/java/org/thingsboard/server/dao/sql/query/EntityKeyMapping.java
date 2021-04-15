@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -31,11 +31,12 @@
 package org.thingsboard.server.dao.sql.query;
 
 import lombok.Data;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.thingsboard.server.common.data.DataConstants;
 import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.common.data.query.BooleanFilterPredicate;
 import org.thingsboard.server.common.data.query.ComplexFilterPredicate;
+import org.thingsboard.server.common.data.query.EntityCountQuery;
 import org.thingsboard.server.common.data.query.EntityDataQuery;
 import org.thingsboard.server.common.data.query.EntityDataSortOrder;
 import org.thingsboard.server.common.data.query.EntityFilter;
@@ -56,7 +57,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -98,12 +98,14 @@ public class EntityKeyMapping {
     public static final List<String> labeledEntityFields = Arrays.asList(CREATED_TIME, ENTITY_TYPE, NAME, TYPE, LABEL, ADDITIONAL_INFO);
     public static final List<String> contactBasedEntityFields = Arrays.asList(CREATED_TIME, ENTITY_TYPE, EMAIL, TITLE, COUNTRY, STATE, CITY, ADDRESS, ADDRESS_2, ZIP, PHONE, ADDITIONAL_INFO);
 
+    public static final Set<String> apiUsageStateEntityFields =  new HashSet<>(Arrays.asList(CREATED_TIME, ENTITY_TYPE, NAME));
     public static final Set<String> commonEntityFieldsSet = new HashSet<>(commonEntityFields);
     public static final Set<String> relationQueryEntityFieldsSet = new HashSet<>(Arrays.asList(CREATED_TIME, ENTITY_TYPE, NAME, TYPE, LABEL, FIRST_NAME, LAST_NAME, EMAIL, REGION, TITLE, COUNTRY, STATE, CITY, ADDRESS, ADDRESS_2, ZIP, PHONE, ADDITIONAL_INFO));
 
     static {
         allowedEntityFieldMap.put(EntityType.DEVICE, new HashSet<>(labeledEntityFields));
         allowedEntityFieldMap.put(EntityType.ASSET, new HashSet<>(labeledEntityFields));
+        allowedEntityFieldMap.put(EntityType.EDGE, new HashSet<>(labeledEntityFields));
         allowedEntityFieldMap.put(EntityType.ENTITY_VIEW, new HashSet<>(typedEntityFields));
 
         allowedEntityFieldMap.put(EntityType.TENANT, new HashSet<>(contactBasedEntityFields));
@@ -124,7 +126,7 @@ public class EntityKeyMapping {
         allowedEntityFieldMap.put(EntityType.BLOB_ENTITY, new HashSet<>(typedEntityFields));
         allowedEntityFieldMap.put(EntityType.ROLE, new HashSet<>(typedEntityFields));
         allowedEntityFieldMap.put(EntityType.ENTITY_GROUP, new HashSet<>(entityGroupFields));
-
+        allowedEntityFieldMap.put(EntityType.API_USAGE_STATE, apiUsageStateEntityFields);
 
         entityFieldColumnMap.put(CREATED_TIME, ModelConstants.CREATED_TIME_PROPERTY);
         entityFieldColumnMap.put(ENTITY_TYPE, ModelConstants.ENTITY_TYPE_PROPERTY);
@@ -156,6 +158,7 @@ public class EntityKeyMapping {
         aliases.put(EntityType.DEVICE, commonEntityAliases);
         aliases.put(EntityType.ASSET, commonEntityAliases);
         aliases.put(EntityType.ENTITY_VIEW, commonEntityAliases);
+        aliases.put(EntityType.EDGE, commonEntityAliases);
         aliases.put(EntityType.WIDGETS_BUNDLE, commonEntityAliases);
         aliases.put(EntityType.ENTITY_GROUP, commonEntityAliases);
 
@@ -281,8 +284,9 @@ public class EntityKeyMapping {
             entityTypeStr = "'" + entityType.name() + "'";
         }
         ctx.addStringParameter(alias + "_key_id", entityKey.getKey());
-        String filterQuery = toQueries(ctx, entityFilter.getType()).filter(Objects::nonNull).collect(
-                Collectors.joining(" and "));
+        String filterQuery = toQueries(ctx, entityFilter.getType())
+                .filter(StringUtils::isNotEmpty)
+                .collect(Collectors.joining(" and "));
         if (StringUtils.isEmpty(filterQuery)) {
             filterQuery = "";
         } else {
@@ -331,8 +335,10 @@ public class EntityKeyMapping {
     }
 
     public static String buildQuery(QueryContext ctx, List<EntityKeyMapping> mappings, EntityFilterType filterType) {
-        return mappings.stream().flatMap(mapping -> mapping.toQueries(ctx, filterType)).filter(Objects::nonNull).collect(
-                Collectors.joining(" AND "));
+        return mappings.stream()
+                .flatMap(mapping -> mapping.toQueries(ctx, filterType))
+                .filter(StringUtils::isNotEmpty)
+                .collect(Collectors.joining(" AND "));
     }
 
     public static List<EntityKeyMapping> prepareKeyMapping(EntityDataQuery query) {
@@ -419,6 +425,30 @@ public class EntityKeyMapping {
         return mappings;
     }
 
+    public static List<EntityKeyMapping> prepareEntityCountKeyMapping(EntityCountQuery query) {
+        Map<EntityKey, List<KeyFilter>> filters =
+                query.getKeyFilters() != null ?
+                        query.getKeyFilters().stream().collect(Collectors.groupingBy(KeyFilter::getKey)) : Collections.emptyMap();
+        int index = 2;
+        List<EntityKeyMapping> mappings = new ArrayList<>();
+        if (!filters.isEmpty()) {
+            for (EntityKey filterField : filters.keySet()) {
+                EntityKeyMapping mapping = new EntityKeyMapping();
+                mapping.setIndex(index);
+                mapping.setAlias(String.format("alias%s", index));
+                mapping.setKeyFilters(filters.get(filterField));
+                mapping.setLatest(!filterField.getType().equals(EntityKeyType.ENTITY_FIELD));
+                mapping.setSelection(false);
+                mapping.setEntityKey(filterField);
+                mappings.add(mapping);
+                index += 1;
+            }
+        }
+
+        return mappings;
+    }
+
+
     private String buildAttributeSelection() {
         return buildTimeSeriesOrAttrSelection(true);
     }
@@ -475,9 +505,8 @@ public class EntityKeyMapping {
                                               ComplexFilterPredicate predicate, EntityFilterType filterType) {
         String result = predicate.getPredicates().stream()
                 .map(keyFilterPredicate -> this.buildPredicateQuery(ctx, alias, key, keyFilterPredicate, filterType))
-                .filter(Objects::nonNull).collect(Collectors.joining(
-                        " " + predicate.getOperation().name() + " "
-                ));
+                .filter(StringUtils::isNotEmpty)
+                .collect(Collectors.joining(" " + predicate.getOperation().name() + " "));
         if (!result.trim().isEmpty()) {
             result = "( " + result + " )";
         }
@@ -533,6 +562,9 @@ public class EntityKeyMapping {
         String operationField = field;
         String paramName = getNextParameterName(field);
         String value = stringFilterPredicate.getValue().getValue();
+        if (value.isEmpty()) {
+            return "";
+        }
         String stringOperationQuery = "";
         if (stringFilterPredicate.isIgnoreCase()) {
             value = value.toLowerCase();
@@ -540,30 +572,26 @@ public class EntityKeyMapping {
         }
         switch (stringFilterPredicate.getOperation()) {
             case EQUAL:
-                stringOperationQuery = String.format("%s = :%s) or (%s is null and :%s = '')", operationField, paramName, operationField, paramName);
+                stringOperationQuery = String.format("%s = :%s)", operationField, paramName);
                 break;
             case NOT_EQUAL:
-                stringOperationQuery = String.format("%s != :%s) or (%s is null and :%s != '')", operationField, paramName, operationField, paramName);
+                stringOperationQuery = String.format("%s != :%s or %s is null)", operationField, paramName, operationField);
                 break;
             case STARTS_WITH:
                 value += "%";
-                stringOperationQuery = String.format("%s like :%s) or (%s is null and :%s = '%%')", operationField, paramName, operationField, paramName);
+                stringOperationQuery = String.format("%s like :%s)", operationField, paramName);
                 break;
             case ENDS_WITH:
                 value = "%" + value;
-                stringOperationQuery = String.format("%s like :%s) or (%s is null and :%s = '%%')", operationField, paramName, operationField, paramName);
+                stringOperationQuery = String.format("%s like :%s)", operationField, paramName);
                 break;
             case CONTAINS:
-                if (value.length() > 0) {
-                    value = "%" + value + "%";
-                }
-                stringOperationQuery = String.format("%s like :%s) or (%s is null and :%s = '')", operationField, paramName, operationField, paramName);
+                value = "%" + value + "%";
+                stringOperationQuery = String.format("%s like :%s)", operationField, paramName);
                 break;
             case NOT_CONTAINS:
-                if (value.length() > 0) {
-                    value = "%" + value + "%";
-                }
-                stringOperationQuery = String.format("%s not like :%s) or (%s is null and :%s != '')", operationField, paramName, operationField, paramName);
+                value = "%" + value + "%";
+                stringOperationQuery = String.format("%s not like :%s or %s is null)", operationField, paramName, operationField);
                 break;
         }
         ctx.addStringParameter(paramName, value);

@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -39,6 +39,7 @@ import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.EntityViewId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.objects.TelemetryEntityView;
+import org.thingsboard.server.common.data.validation.NoXss;
 
 /**
  * Created by Victor Basanets on 8/27/2017.
@@ -55,7 +56,9 @@ public class EntityView extends SearchTextBasedWithAdditionalInfo<EntityViewId>
     private EntityId entityId;
     private TenantId tenantId;
     private CustomerId customerId;
+    @NoXss
     private String name;
+    @NoXss
     private String type;
     private TelemetryEntityView keys;
     private long startTimeMs;

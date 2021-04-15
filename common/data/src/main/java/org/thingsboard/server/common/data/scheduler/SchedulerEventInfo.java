@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -44,6 +44,7 @@ import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.SchedulerEventId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.validation.NoXss;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -53,7 +54,9 @@ public class SchedulerEventInfo extends SearchTextBasedWithAdditionalInfo<Schedu
 
     private TenantId tenantId;
     private CustomerId customerId;
+    @NoXss
     private String name;
+    @NoXss
     private String type;
     private transient JsonNode schedule;
     @JsonIgnore

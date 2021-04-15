@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -67,6 +67,7 @@ export interface AlarmDataSubscriptionOptions {
 
 export class AlarmDataSubscription {
 
+  private alarmDataSubscriptionOptions = this.listener.alarmDataSubscriptionOptions;
   private datasourceType: DatasourceType = this.alarmDataSubscriptionOptions.datasourceType;
 
   private history: boolean;
@@ -80,8 +81,7 @@ export class AlarmDataSubscription {
 
   private subsTw: SubscriptionTimewindow;
 
-  constructor(public alarmDataSubscriptionOptions: AlarmDataSubscriptionOptions,
-              private listener: AlarmDataListener,
+  constructor(private listener: AlarmDataListener,
               private telemetryService: TelemetryService) {
   }
 
@@ -145,6 +145,7 @@ export class AlarmDataSubscription {
         this.alarmDataCommand.query.pageLink.timeWindow = this.subsTw.realtimeWindowMs;
       }
 
+      this.subscriber.setTsOffset(this.subsTw.tsOffset);
       this.subscriber.subscriptionCommands.push(this.alarmDataCommand);
 
       this.subscriber.alarmData$.subscribe((alarmDataUpdate) => {
@@ -158,8 +159,11 @@ export class AlarmDataSubscription {
       this.subscriber.subscribe();
 
     } else if (this.datasourceType === DatasourceType.function) {
+      const alarm = deepClone(simulatedAlarm);
+      alarm.createdTime += this.subsTw.tsOffset;
+      alarm.startTs += this.subsTw.tsOffset;
       const pageData: PageData<AlarmData> = {
-        data: [{...simulatedAlarm, entityId: '1', latest: {}}],
+        data: [{...alarm, entityId: '1', latest: {}}],
         hasNext: false,
         totalElements: 1,
         totalPages: 1

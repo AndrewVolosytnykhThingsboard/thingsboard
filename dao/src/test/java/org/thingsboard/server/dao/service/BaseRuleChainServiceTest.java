@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -38,12 +38,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.thingsboard.server.common.data.Tenant;
+import org.thingsboard.server.common.data.id.RuleChainId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.relation.EntityRelation;
 import org.thingsboard.server.common.data.rule.RuleChain;
 import org.thingsboard.server.common.data.rule.RuleChainMetaData;
+import org.thingsboard.server.common.data.rule.RuleChainType;
 import org.thingsboard.server.common.data.rule.RuleNode;
 import org.thingsboard.server.dao.exception.DataValidationException;
 
@@ -158,7 +160,7 @@ public abstract class BaseRuleChainServiceTest extends AbstractServiceTest {
         PageLink pageLink = new PageLink(16);
         PageData<RuleChain> pageData = null;
         do {
-            pageData = ruleChainService.findTenantRuleChains(tenantId, pageLink);
+            pageData = ruleChainService.findTenantRuleChainsByType(tenantId, RuleChainType.CORE, pageLink);
             loadedRuleChains.addAll(pageData.getData());
             if (pageData.hasNext()) {
                 pageLink = pageLink.nextPageLink();
@@ -173,7 +175,7 @@ public abstract class BaseRuleChainServiceTest extends AbstractServiceTest {
         ruleChainService.deleteRuleChainsByTenantId(tenantId);
 
         pageLink = new PageLink(31);
-        pageData = ruleChainService.findTenantRuleChains(tenantId, pageLink);
+        pageData = ruleChainService.findTenantRuleChainsByType(tenantId, RuleChainType.CORE, pageLink);
         Assert.assertFalse(pageData.hasNext());
         Assert.assertTrue(pageData.getData().isEmpty());
 
@@ -209,7 +211,7 @@ public abstract class BaseRuleChainServiceTest extends AbstractServiceTest {
         PageLink pageLink = new PageLink(19, 0, name1);
         PageData<RuleChain> pageData = null;
         do {
-            pageData = ruleChainService.findTenantRuleChains(tenantId, pageLink);
+            pageData = ruleChainService.findTenantRuleChainsByType(tenantId, RuleChainType.CORE, pageLink);
             loadedRuleChainsName1.addAll(pageData.getData());
             if (pageData.hasNext()) {
                 pageLink = pageLink.nextPageLink();
@@ -224,7 +226,7 @@ public abstract class BaseRuleChainServiceTest extends AbstractServiceTest {
         List<RuleChain> loadedRuleChainsName2 = new ArrayList<>();
         pageLink = new PageLink(4, 0, name2);
         do {
-            pageData = ruleChainService.findTenantRuleChains(tenantId, pageLink);
+            pageData = ruleChainService.findTenantRuleChainsByType(tenantId, RuleChainType.CORE, pageLink);
             loadedRuleChainsName2.addAll(pageData.getData());
             if (pageData.hasNext()) {
                 pageLink = pageLink.nextPageLink();
@@ -241,7 +243,7 @@ public abstract class BaseRuleChainServiceTest extends AbstractServiceTest {
         }
 
         pageLink = new PageLink(4, 0, name1);
-        pageData = ruleChainService.findTenantRuleChains(tenantId, pageLink);
+        pageData = ruleChainService.findTenantRuleChainsByType(tenantId, RuleChainType.CORE, pageLink);
         Assert.assertFalse(pageData.hasNext());
         Assert.assertEquals(0, pageData.getData().size());
 
@@ -250,7 +252,7 @@ public abstract class BaseRuleChainServiceTest extends AbstractServiceTest {
         }
 
         pageLink = new PageLink(4, 0, name2);
-        pageData = ruleChainService.findTenantRuleChains(tenantId, pageLink);
+        pageData = ruleChainService.findTenantRuleChainsByType(tenantId, RuleChainType.CORE, pageLink);
         Assert.assertFalse(pageData.hasNext());
         Assert.assertEquals(0, pageData.getData().size());
     }
@@ -332,6 +334,54 @@ public abstract class BaseRuleChainServiceTest extends AbstractServiceTest {
         ruleChainService.deleteRuleChainById(tenantId, savedRuleChainMetaData.getRuleChainId());
     }
 
+    @Test(expected = DataValidationException.class)
+    public void testUpdateRuleChainMetaDataWithCirclingRelation() throws Exception {
+        ruleChainService.saveRuleChainMetaData(tenantId, createRuleChainMetadataWithCirclingRelation());
+    }
+
+    @Test(expected = DataValidationException.class)
+    public void testUpdateRuleChainMetaDataWithCirclingRelation2() throws Exception {
+        ruleChainService.saveRuleChainMetaData(tenantId, createRuleChainMetadataWithCirclingRelation2());
+    }
+
+    @Test
+    public void testGetDefaultEdgeRuleChains() throws Exception {
+        RuleChainId ruleChainId = saveRuleChainAndSetAutoAssignToEdge("Default Edge Rule Chain 1");
+        saveRuleChainAndSetAutoAssignToEdge("Default Edge Rule Chain 2");
+        List<RuleChain> result = ruleChainService.findAutoAssignToEdgeRuleChainsByTenantId(tenantId).get();
+        Assert.assertEquals(2, result.size());
+
+        ruleChainService.unsetAutoAssignToEdgeRuleChain(tenantId, ruleChainId);
+
+        result = ruleChainService.findAutoAssignToEdgeRuleChainsByTenantId(tenantId).get();
+        Assert.assertEquals(1, result.size());
+    }
+
+    @Test
+    public void setEdgeTemplateRootRuleChain() throws Exception {
+        RuleChainId ruleChainId1 = saveRuleChainAndSetAutoAssignToEdge("Default Edge Rule Chain 1");
+        RuleChainId ruleChainId2 = saveRuleChainAndSetAutoAssignToEdge("Default Edge Rule Chain 2");
+
+        ruleChainService.setEdgeTemplateRootRuleChain(tenantId, ruleChainId1);
+        ruleChainService.setEdgeTemplateRootRuleChain(tenantId, ruleChainId2);
+
+        RuleChain ruleChainById = ruleChainService.findRuleChainById(tenantId, ruleChainId1);
+        Assert.assertFalse(ruleChainById.isRoot());
+
+        ruleChainById = ruleChainService.findRuleChainById(tenantId, ruleChainId2);
+        Assert.assertTrue(ruleChainById.isRoot());
+    }
+
+    private RuleChainId saveRuleChainAndSetAutoAssignToEdge(String name) {
+        RuleChain edgeRuleChain = new RuleChain();
+        edgeRuleChain.setTenantId(tenantId);
+        edgeRuleChain.setType(RuleChainType.EDGE);
+        edgeRuleChain.setName(name);
+        RuleChain savedEdgeRuleChain = ruleChainService.saveRuleChain(edgeRuleChain);
+        ruleChainService.setAutoAssignToEdgeRuleChain(tenantId, savedEdgeRuleChain.getId());
+        return savedEdgeRuleChain.getId();
+    }
+
     private RuleChainMetaData createRuleChainMetadata() throws Exception {
         RuleChain ruleChain = new RuleChain();
         ruleChain.setName("My RuleChain");
@@ -372,5 +422,85 @@ public abstract class BaseRuleChainServiceTest extends AbstractServiceTest {
         return ruleChainService.saveRuleChainMetaData(tenantId, ruleChainMetaData);
     }
 
+    private RuleChainMetaData createRuleChainMetadataWithCirclingRelation() throws Exception {
+        RuleChain ruleChain = new RuleChain();
+        ruleChain.setName("My RuleChain");
+        ruleChain.setTenantId(tenantId);
+        RuleChain savedRuleChain = ruleChainService.saveRuleChain(ruleChain);
 
+        RuleChainMetaData ruleChainMetaData = new RuleChainMetaData();
+        ruleChainMetaData.setRuleChainId(savedRuleChain.getId());
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        RuleNode ruleNode1 = new RuleNode();
+        ruleNode1.setName("name1");
+        ruleNode1.setType("type1");
+        ruleNode1.setConfiguration(mapper.readTree("\"key1\": \"val1\""));
+
+        RuleNode ruleNode2 = new RuleNode();
+        ruleNode2.setName("name2");
+        ruleNode2.setType("type2");
+        ruleNode2.setConfiguration(mapper.readTree("\"key2\": \"val2\""));
+
+        RuleNode ruleNode3 = new RuleNode();
+        ruleNode3.setName("name3");
+        ruleNode3.setType("type3");
+        ruleNode3.setConfiguration(mapper.readTree("\"key3\": \"val3\""));
+
+        List<RuleNode> ruleNodes = new ArrayList<>();
+        ruleNodes.add(ruleNode1);
+        ruleNodes.add(ruleNode2);
+        ruleNodes.add(ruleNode3);
+        ruleChainMetaData.setFirstNodeIndex(0);
+        ruleChainMetaData.setNodes(ruleNodes);
+
+        ruleChainMetaData.addConnectionInfo(0,1,"success");
+        ruleChainMetaData.addConnectionInfo(0,2,"fail");
+        ruleChainMetaData.addConnectionInfo(1,2,"success");
+        ruleChainMetaData.addConnectionInfo(2,2,"success");
+
+        return ruleChainMetaData;
+    }
+
+    private RuleChainMetaData createRuleChainMetadataWithCirclingRelation2() throws Exception {
+        RuleChain ruleChain = new RuleChain();
+        ruleChain.setName("My RuleChain");
+        ruleChain.setTenantId(tenantId);
+        RuleChain savedRuleChain = ruleChainService.saveRuleChain(ruleChain);
+
+        RuleChainMetaData ruleChainMetaData = new RuleChainMetaData();
+        ruleChainMetaData.setRuleChainId(savedRuleChain.getId());
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        RuleNode ruleNode1 = new RuleNode();
+        ruleNode1.setName("name1");
+        ruleNode1.setType("type1");
+        ruleNode1.setConfiguration(mapper.readTree("\"key1\": \"val1\""));
+
+        RuleNode ruleNode2 = new RuleNode();
+        ruleNode2.setName("name2");
+        ruleNode2.setType("type2");
+        ruleNode2.setConfiguration(mapper.readTree("\"key2\": \"val2\""));
+
+        RuleNode ruleNode3 = new RuleNode();
+        ruleNode3.setName("name3");
+        ruleNode3.setType("type3");
+        ruleNode3.setConfiguration(mapper.readTree("\"key3\": \"val3\""));
+
+        List<RuleNode> ruleNodes = new ArrayList<>();
+        ruleNodes.add(ruleNode1);
+        ruleNodes.add(ruleNode2);
+        ruleNodes.add(ruleNode3);
+        ruleChainMetaData.setFirstNodeIndex(0);
+        ruleChainMetaData.setNodes(ruleNodes);
+
+        ruleChainMetaData.addConnectionInfo(0,1,"success");
+        ruleChainMetaData.addConnectionInfo(0,2,"fail");
+        ruleChainMetaData.addConnectionInfo(1,2,"success");
+        ruleChainMetaData.addConnectionInfo(2,0,"success");
+
+        return ruleChainMetaData;
+    }
 }

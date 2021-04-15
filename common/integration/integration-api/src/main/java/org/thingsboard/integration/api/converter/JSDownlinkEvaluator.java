@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -37,6 +37,7 @@ import org.thingsboard.integration.api.data.IntegrationMetaData;
 import org.thingsboard.js.api.JsInvokeService;
 import org.thingsboard.js.api.JsScriptType;
 import org.thingsboard.server.common.data.id.EntityId;
+import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.msg.TbMsg;
 
 import javax.script.ScriptException;
@@ -47,15 +48,15 @@ public class JSDownlinkEvaluator extends AbstractJSEvaluator {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    public JSDownlinkEvaluator(JsInvokeService jsInvokeService, EntityId entityId, String script) {
-        super(jsInvokeService, entityId, JsScriptType.DOWNLINK_CONVERTER_SCRIPT, script);
+    public JSDownlinkEvaluator(TenantId tenantId, JsInvokeService jsInvokeService, EntityId entityId, String script) {
+        super(tenantId, jsInvokeService, entityId, JsScriptType.DOWNLINK_CONVERTER_SCRIPT, script);
     }
 
     public JsonNode execute(TbMsg msg, IntegrationMetaData metadata) throws ScriptException {
         try {
             validateSuccessfulScriptLazyInit();
             String[] inArgs = prepareArgs(msg, metadata);
-            String eval = jsInvokeService.invokeFunction(this.scriptId, inArgs[0], inArgs[1], inArgs[2], inArgs[3]).get().toString();
+            String eval = jsInvokeService.invokeFunction(this.tenantId, this.scriptId, inArgs[0], inArgs[1], inArgs[2], inArgs[3]).get().toString();
             return mapper.readTree(eval);
         } catch (ExecutionException e) {
             if (e.getCause() instanceof ScriptException) {

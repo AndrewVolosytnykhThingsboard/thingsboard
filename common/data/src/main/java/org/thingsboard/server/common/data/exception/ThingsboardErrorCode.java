@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -43,7 +43,8 @@ public enum ThingsboardErrorCode {
     BAD_REQUEST_PARAMS(31),
     ITEM_NOT_FOUND(32),
     TOO_MANY_REQUESTS(33),
-    TOO_MANY_UPDATES(34);
+    TOO_MANY_UPDATES(34),
+    SUBSCRIPTION_VIOLATION(40);
 
     private int errorCode;
 

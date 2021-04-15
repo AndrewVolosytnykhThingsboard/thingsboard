@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -50,4 +50,6 @@ public interface RuleNodeStateDao extends Dao<RuleNodeState> {
     RuleNodeState findByRuleNodeIdAndEntityId(UUID ruleNodeId, UUID entityId);
 
     void removeByRuleNodeId(UUID ruleNodeId);
+
+    void removeByRuleNodeIdAndEntityId(UUID ruleNodeId, UUID entityId);
 }

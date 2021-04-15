@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -46,6 +46,7 @@ import { PageComponent } from '@shared/components/page.component';
 import { Store } from '@ngrx/store';
 import { AppState } from '@core/core.state';
 import { Subscription } from 'rxjs';
+import { isDefinedAndNotNull, isEqual } from '@core/utils';
 
 @Component({
   selector: 'tb-key-val-map',
@@ -75,6 +76,8 @@ export class KeyValMapComponent extends PageComponent implements ControlValueAcc
   @Input() valuePlaceholderText: string;
 
   @Input() noDataText: string;
+
+  @Input() singlePredefinedKey: string;
 
   kvListFormGroup: FormGroup;
 
@@ -118,7 +121,7 @@ export class KeyValMapComponent extends PageComponent implements ControlValueAcc
       this.valueChangeSubscription.unsubscribe();
     }
     const keyValsControls: Array<AbstractControl> = [];
-    if (keyValMap) {
+    if (keyValMap && !isEqual(keyValMap, {})) {
       for (const property of Object.keys(keyValMap)) {
         if (Object.prototype.hasOwnProperty.call(keyValMap, property)) {
           keyValsControls.push(this.fb.group({
@@ -129,6 +132,9 @@ export class KeyValMapComponent extends PageComponent implements ControlValueAcc
       }
     }
     this.kvListFormGroup.setControl('keyVals', this.fb.array(keyValsControls));
+    if (this.isSinglePredefinedKey && !keyValsControls.length) {
+      this.addKeyVal();
+    }
     this.valueChangeSubscription = this.kvListFormGroup.valueChanges.subscribe(() => {
       this.updateModel();
     });
@@ -146,7 +152,7 @@ export class KeyValMapComponent extends PageComponent implements ControlValueAcc
   public addKeyVal() {
     const keyValsFormArray = this.kvListFormGroup.get('keyVals') as FormArray;
     keyValsFormArray.push(this.fb.group({
-      key: ['', [Validators.required]],
+      key: [this.isSinglePredefinedKey ? this.singlePredefinedKey : '', [Validators.required]],
       value: ['', [Validators.required]]
     }));
   }
@@ -165,6 +171,14 @@ export class KeyValMapComponent extends PageComponent implements ControlValueAcc
         valid: false,
       },
     };
+  }
+
+  get isSingleMode(): boolean {
+    return isDefinedAndNotNull(this.singlePredefinedKey);
+  }
+
+  get isSinglePredefinedKey(): boolean {
+    return isDefinedAndNotNull(this.singlePredefinedKey);
   }
 
   private updateModel() {

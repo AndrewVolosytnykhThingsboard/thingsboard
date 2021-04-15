@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -30,11 +30,17 @@
 ///
 
 import { Component, forwardRef, Input, OnInit } from '@angular/core';
-import { ControlValueAccessor, FormBuilder, FormGroup, NG_VALUE_ACCESSOR, Validators } from '@angular/forms';
 import {
-  EntityKeyValueType,
-  FilterPredicateType, KeyFilterPredicate, KeyFilterPredicateInfo
-} from '@shared/models/query/query.models';
+  ControlValueAccessor,
+  FormBuilder,
+  FormGroup,
+  NG_VALIDATORS,
+  NG_VALUE_ACCESSOR,
+  ValidationErrors,
+  Validator,
+  Validators
+} from '@angular/forms';
+import { EntityKeyValueType, FilterPredicateType, KeyFilterPredicateInfo } from '@shared/models/query/query.models';
 
 @Component({
   selector: 'tb-filter-predicate',
@@ -45,10 +51,15 @@ import {
       provide: NG_VALUE_ACCESSOR,
       useExisting: forwardRef(() => FilterPredicateComponent),
       multi: true
+    },
+    {
+      provide: NG_VALIDATORS,
+      useExisting: forwardRef(() => FilterPredicateComponent),
+      multi: true
     }
   ]
 })
-export class FilterPredicateComponent implements ControlValueAccessor, OnInit {
+export class FilterPredicateComponent implements ControlValueAccessor, Validator, OnInit {
 
   @Input() disabled: boolean;
 
@@ -59,6 +70,8 @@ export class FilterPredicateComponent implements ControlValueAccessor, OnInit {
   @Input() displayUserParameters = true;
 
   @Input() allowUserDynamicSource = true;
+
+  @Input() onlyUserDynamicSource = false;
 
   filterPredicateFormGroup: FormGroup;
 
@@ -88,13 +101,19 @@ export class FilterPredicateComponent implements ControlValueAccessor, OnInit {
   registerOnTouched(fn: any): void {
   }
 
-  setDisabledState?(isDisabled: boolean): void {
+  setDisabledState(isDisabled: boolean): void {
     this.disabled = isDisabled;
     if (this.disabled) {
       this.filterPredicateFormGroup.disable({emitEvent: false});
     } else {
       this.filterPredicateFormGroup.enable({emitEvent: false});
     }
+  }
+
+  validate(): ValidationErrors | null {
+    return this.filterPredicateFormGroup.valid ? null : {
+      filterPredicate: {valid: false}
+    };
   }
 
   writeValue(predicate: KeyFilterPredicateInfo): void {

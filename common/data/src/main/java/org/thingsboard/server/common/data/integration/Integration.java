@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -40,6 +40,7 @@ import org.thingsboard.server.common.data.TenantEntity;
 import org.thingsboard.server.common.data.id.ConverterId;
 import org.thingsboard.server.common.data.id.IntegrationId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.validation.NoXss;
 
 @EqualsAndHashCode(callSuper = true)
 public class Integration extends SearchTextBased<IntegrationId> implements HasName, TenantEntity {
@@ -49,6 +50,7 @@ public class Integration extends SearchTextBased<IntegrationId> implements HasNa
     private TenantId tenantId;
     private ConverterId defaultConverterId;
     private ConverterId downlinkConverterId;
+    @NoXss
     private String name;
     private String routingKey;
     private IntegrationType type;

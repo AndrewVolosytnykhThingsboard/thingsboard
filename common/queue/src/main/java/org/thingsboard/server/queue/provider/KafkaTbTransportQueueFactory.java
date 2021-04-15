@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -36,6 +36,7 @@ import org.springframework.stereotype.Component;
 import org.thingsboard.server.gen.transport.TransportProtos.ToCoreMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToRuleEngineMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToTransportMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.ToUsageStatsServiceMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.TransportApiRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.TransportApiResponseMsg;
 import org.thingsboard.server.queue.TbQueueAdmin;
@@ -46,6 +47,7 @@ import org.thingsboard.server.queue.common.DefaultTbQueueRequestTemplate;
 import org.thingsboard.server.queue.common.TbProtoQueueMsg;
 import org.thingsboard.server.queue.discovery.TbServiceInfoProvider;
 import org.thingsboard.server.queue.kafka.TbKafkaAdmin;
+import org.thingsboard.server.queue.kafka.TbKafkaConsumerStatsService;
 import org.thingsboard.server.queue.kafka.TbKafkaConsumerTemplate;
 import org.thingsboard.server.queue.kafka.TbKafkaProducerTemplate;
 import org.thingsboard.server.queue.kafka.TbKafkaSettings;
@@ -68,6 +70,7 @@ public class KafkaTbTransportQueueFactory implements TbTransportQueueFactory {
     private final TbQueueRuleEngineSettings ruleEngineSettings;
     private final TbQueueTransportApiSettings transportApiSettings;
     private final TbQueueTransportNotificationSettings transportNotificationSettings;
+    private final TbKafkaConsumerStatsService consumerStatsService;
 
     private final TbQueueAdmin coreAdmin;
     private final TbQueueAdmin ruleEngineAdmin;
@@ -80,6 +83,7 @@ public class KafkaTbTransportQueueFactory implements TbTransportQueueFactory {
                                         TbQueueRuleEngineSettings ruleEngineSettings,
                                         TbQueueTransportApiSettings transportApiSettings,
                                         TbQueueTransportNotificationSettings transportNotificationSettings,
+                                        TbKafkaConsumerStatsService consumerStatsService,
                                         TbKafkaTopicConfigs kafkaTopicConfigs) {
         this.kafkaSettings = kafkaSettings;
         this.serviceInfoProvider = serviceInfoProvider;
@@ -87,6 +91,7 @@ public class KafkaTbTransportQueueFactory implements TbTransportQueueFactory {
         this.ruleEngineSettings = ruleEngineSettings;
         this.transportApiSettings = transportApiSettings;
         this.transportNotificationSettings = transportNotificationSettings;
+        this.consumerStatsService = consumerStatsService;
 
         this.coreAdmin = new TbKafkaAdmin(kafkaSettings, kafkaTopicConfigs.getCoreConfigs());
         this.ruleEngineAdmin = new TbKafkaAdmin(kafkaSettings, kafkaTopicConfigs.getRuleEngineConfigs());
@@ -109,6 +114,7 @@ public class KafkaTbTransportQueueFactory implements TbTransportQueueFactory {
         responseBuilder.groupId("transport-node-" + serviceInfoProvider.getServiceId());
         responseBuilder.decoder(msg -> new TbProtoQueueMsg<>(msg.getKey(), TransportApiResponseMsg.parseFrom(msg.getData()), msg.getHeaders()));
         responseBuilder.admin(transportApiAdmin);
+        responseBuilder.statsService(consumerStatsService);
 
         DefaultTbQueueRequestTemplate.DefaultTbQueueRequestTemplateBuilder
                 <TbProtoQueueMsg<TransportApiRequestMsg>, TbProtoQueueMsg<TransportApiResponseMsg>> templateBuilder = DefaultTbQueueRequestTemplate.builder();
@@ -150,7 +156,18 @@ public class KafkaTbTransportQueueFactory implements TbTransportQueueFactory {
         responseBuilder.groupId("transport-node-" + serviceInfoProvider.getServiceId());
         responseBuilder.decoder(msg -> new TbProtoQueueMsg<>(msg.getKey(), ToTransportMsg.parseFrom(msg.getData()), msg.getHeaders()));
         responseBuilder.admin(notificationAdmin);
+        responseBuilder.statsService(consumerStatsService);
         return responseBuilder.build();
+    }
+
+    @Override
+    public TbQueueProducer<TbProtoQueueMsg<ToUsageStatsServiceMsg>> createToUsageStatsServiceMsgProducer() {
+        TbKafkaProducerTemplate.TbKafkaProducerTemplateBuilder<TbProtoQueueMsg<ToUsageStatsServiceMsg>> requestBuilder = TbKafkaProducerTemplate.builder();
+        requestBuilder.settings(kafkaSettings);
+        requestBuilder.clientId("transport-node-us-producer-" + serviceInfoProvider.getServiceId());
+        requestBuilder.defaultTopic(coreSettings.getUsageStatsTopic());
+        requestBuilder.admin(coreAdmin);
+        return requestBuilder.build();
     }
 
     @PreDestroy

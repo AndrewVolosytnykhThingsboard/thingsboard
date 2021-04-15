@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -40,6 +40,8 @@ import org.thingsboard.server.dao.exception.DataValidationException;
 
 import javax.servlet.http.HttpServletRequest;
 
+import javax.servlet.http.HttpServletRequest;
+
 public interface SystemSecurityService {
 
     SecuritySettings getSecuritySettings(TenantId tenantId);
@@ -51,4 +53,7 @@ public interface SystemSecurityService {
     void validatePassword(TenantId tenantId, String password, UserCredentials userCredentials) throws DataValidationException;
 
     String getBaseUrl(Authority authority, TenantId tenantId, CustomerId customerId, HttpServletRequest httpServletRequest);
+
+    String getBaseUrl(TenantId tenantId, CustomerId customerId, HttpServletRequest httpServletRequest);
+
 }

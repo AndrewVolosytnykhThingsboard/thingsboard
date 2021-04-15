@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -99,6 +99,14 @@ public interface EntityGroupRepository extends CrudRepository<EntityGroupEntity,
                                   @Param("groupType") String groupType,
                                   Pageable pageable);
 
+    @Query("SELECT e FROM EntityGroupEntity e, " +
+            "RelationEntity re " +
+            "WHERE e.id = re.toId AND re.toType = 'ENTITY_GROUP' " +
+            "AND re.relationTypeGroup = 'EDGE' " +
+            "AND re.relationType = :relationType " +
+            "AND re.fromId = :edgeId AND re.fromType = 'EDGE'")
+    List<EntityGroupEntity> findEdgeEntityGroupsByType(@Param("edgeId") UUID edgeId,
+                                                       @Param("relationType") String relationType);
 
     @Query("SELECT CASE WHEN (count(re) = 1) " +
             "THEN true " +

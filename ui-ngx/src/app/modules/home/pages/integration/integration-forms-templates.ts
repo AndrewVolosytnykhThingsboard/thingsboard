@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -50,7 +50,7 @@ export const handlerConfigurationTypes = {
     value: 'HEX',
     name: 'extension.hex'
   }
-}
+};
 
 export const tcpBinaryByteOrder = {
   littleEndian: {
@@ -59,7 +59,7 @@ export const tcpBinaryByteOrder = {
   bigEndian: {
     value: 'BIG_ENDIAN'
   }
-}
+};
 
 export const tcpTextMessageSeparator = {
   systemLineSeparator: {
@@ -68,14 +68,27 @@ export const tcpTextMessageSeparator = {
   nulDelimiter: {
     value: 'NUL_DELIMITER'
   }
-}
+};
 
 export const opcSecurityTypes = {
   Basic128Rsa15: 'Basic128Rsa15',
   Basic256: 'Basic256',
   Basic256Sha256: 'Basic256Sha256',
   None: 'None'
-}
+};
+
+export type loriotCredentialType = 'basic' | 'token';
+
+export const loriotCredentialTypes = {
+  basic: {
+    value: 'basic',
+    name: 'extension.basic'
+  },
+  token: {
+    value: 'token',
+    name: 'extension.token'
+  }
+};
 
 export type mqttCredentialType = 'anonymous' | 'basic' | 'cert.PEM';
 
@@ -92,7 +105,7 @@ export const mqttCredentialTypes = {
     value: 'cert.PEM',
     name: 'extension.pem'
   }
-}
+};
 
 export type azureIotHubCredentialsType = 'sas' | 'cert.PEM';
 export const azureIotHubCredentialsTypes = {
@@ -104,7 +117,7 @@ export const azureIotHubCredentialsTypes = {
     value: 'cert.PEM',
     name: 'extension.pem'
   }
-}
+};
 
 export type apachePulsarCredentialsType = 'anonymous' | 'token';
 export const apachePulsarCredentialsTypes = {
@@ -116,7 +129,7 @@ export const apachePulsarCredentialsTypes = {
     value: 'token',
     name: 'extension.token'
   }
-}
+};
 
 export function updateIntegrationFormState(type: IntegrationType, info: IntegrationTypeInfo,
                                            integrationForm: FormGroup, disabled: boolean) {
@@ -128,19 +141,24 @@ export function updateIntegrationFormState(type: IntegrationType, info: Integrat
       integrationForm.get('httpEndpoint').disable({emitEvent: false});
     } else if (type === IntegrationType.TTN) {
       integrationForm.get('topicFilters').disable({emitEvent: false});
+    } else if (type === IntegrationType.CHIRPSTACK) {
+      integrationForm.get('clientConfiguration.httpEndpoint').disable({emitEvent: false});
     }
   }
 }
 
 export function updateIntegrationFormDefaultFields(type: IntegrationType, integrationForm: FormGroup) {
   if (type === IntegrationType.KAFKA) {
-    if (!integrationForm.get('clientConfiguration').get('groupId').value)
+    if (!integrationForm.get('clientConfiguration').get('groupId').value) {
       integrationForm.get('clientConfiguration').get('groupId').patchValue('group_id_' + generateId(10));
-    if (!integrationForm.get('clientConfiguration').get('clientId').value)
+    }
+    if (!integrationForm.get('clientConfiguration').get('clientId').value) {
       integrationForm.get('clientConfiguration').get('clientId').patchValue('client_id_' + generateId(10));
+    }
   } else if (type === IntegrationType.CUSTOM) {
-    if (!integrationForm.get('configuration').value)
+    if (!integrationForm.get('configuration').value) {
       integrationForm.get('configuration').patchValue('{}');
+    }
   }
 }
 
@@ -164,6 +182,11 @@ export const templates = {
     replaceNoContentToOk: '',
     enableSecurity: false,
     downlinkUrl: 'https://api.thingpark.com/thingpark/lrc/rest/downlink',
+    loriotDownlinkUrl: 'https://eu1.loriot.io/1/rest',
+    createLoriotOutput: false,
+    sendDownlink: false,
+    server: 'eu1',
+    appId: '',
     enableSecurityNew: false,
     asId: '',
     asIdNew: '',
@@ -174,6 +197,13 @@ export const templates = {
     httpEndpoint: '',
     headersFilter: {},
     ignoreNonPrimitiveFields: ['headersFilter'],
+    token: '',
+    credentials: {
+      type: loriotCredentialTypes.basic.value,
+      email: '',
+      password: '',
+      token: ''
+    },
     fieldValidators: {
       baseUrl: [Validators.required],
       asId: [Validators.required],
@@ -181,7 +211,14 @@ export const templates = {
       asKey: [Validators.required],
       clientIdNew: [Validators.required],
       clientSecret: [Validators.required],
-      maxTimeDiffInSeconds: [Validators.required, Validators.min(0)]
+      maxTimeDiffInSeconds: [Validators.required, Validators.min(0)],
+      loriotDownlinkUrl: [Validators.required],
+      server: [Validators.required],
+      appId: [Validators.required],
+      token: [Validators.required],
+      'credentials.email': [],
+      'credentials.password': [],
+      'credentials.token': []
     }
   },
   [IntegrationType.MQTT]: {
@@ -225,7 +262,6 @@ export const templates = {
       topicFilters: [Validators.required]
     }
   },
-
   [IntegrationType.AZURE_IOT_HUB]: {
     clientConfiguration: {
       host: '\<name\>.azure-devices.net',
@@ -246,7 +282,7 @@ export const templates = {
         privateKeyPassword: ''
       },
     },
-    topicFilters: [{filter: "devices/\<device_id\>/messages/devicebound/#", qos: 0}],
+    topicFilters: [{filter: 'devices/\<device_id\>/messages/devicebound/#', qos: 0}],
     fieldValidators: {
       'clientConfiguration.host': [Validators.required],
       'clientConfiguration.clientId': [Validators.required],
@@ -258,7 +294,6 @@ export const templates = {
       topicFilters: [Validators.required]
     }
   },
-
   [IntegrationType.AWS_IOT]: {
     clientConfiguration: {
       host: '',
@@ -358,6 +393,19 @@ export const templates = {
       topicFilters: [Validators.required]
     }
   },
+  [IntegrationType.CHIRPSTACK]: {
+    clientConfiguration: {
+      baseUrl: baseUrl(),
+      applicationServerUrl: '',
+      replaceNoContentToOk: true,
+      applicationServerAPIToken: '',
+      httpEndpoint: ''
+    },
+    fieldValidators: {
+      'clientConfiguration.baseUrl': [Validators.required],
+      'clientConfiguration.applicationServerAPIToken': [Validators.required],
+    }
+  },
   [IntegrationType.TTN]: {
     clientConfiguration: {
       host: '',
@@ -385,48 +433,42 @@ export const templates = {
       topicFilters: [Validators.required]
     }
   },
-    [IntegrationType.TTI]: {
-  clientConfiguration: {
-    host: '',
-      customHost: false,
-      port: 8883,
-      ssl: true,
-      connectTimeoutSec: 10,
-      credentials: {
-      type: 'basic',
-        username: '',
-        password: ''
+  [IntegrationType.TTI]: {
+    clientConfiguration: {
+      host: '',
+        customHost: false,
+        port: 8883,
+        ssl: true,
+        connectTimeoutSec: 10,
+        credentials: {
+        type: 'basic',
+          username: '',
+          password: ''
+      },
     },
+    topicFilters: [{
+      filter: 'v3/+/devices/+/up',
+      qos: 0
+    }],
+      downlinkTopicPattern: '',
+      fieldValidators: {
+      'clientConfiguration.host': [Validators.required],
+        'clientConfiguration.connectTimeoutSec': [Validators.required, Validators.min(1), Validators.max(200)],
+        'clientConfiguration.credentials.username': [Validators.required],
+        'clientConfiguration.credentials.password': [Validators.required],
+        downlinkTopicPattern: [Validators.required],
+        topicFilters: [Validators.required]
+    }
   },
-  topicFilters: [{
-    filter: 'v3/+/devices/+/up',
-    qos: 0
-  }],
-    downlinkTopicPattern: '',
-    fieldValidators: {
-    'clientConfiguration.host': [Validators.required],
-      'clientConfiguration.connectTimeoutSec': [Validators.required, Validators.min(1), Validators.max(200)],
-      'clientConfiguration.credentials.username': [Validators.required],
-      'clientConfiguration.credentials.password': [Validators.required],
-      downlinkTopicPattern: [Validators.required],
-      topicFilters: [Validators.required]
-  }
-},
   [IntegrationType.AZURE_EVENT_HUB]: {
     clientConfiguration: {
       connectTimeoutSec: 10,
-      namespaceName: '',
-      eventHubName: '',
-      sasKeyName: '',
-      sasKey: '',
+      connectionString: '',
       iotHubName: ''
     },
     fieldValidators: {
       'clientConfiguration.connectTimeoutSec': [Validators.required, Validators.min(1), Validators.max(200)],
-      'clientConfiguration.namespaceName': [Validators.required],
-      'clientConfiguration.eventHubName': [Validators.required],
-      'clientConfiguration.sasKeyName': [Validators.required],
-      'clientConfiguration.sasKey': [Validators.required]
+      'clientConfiguration.connectionString': [Validators.required]
     }
   },
   [IntegrationType.OPC_UA]: {
@@ -476,6 +518,8 @@ export const templates = {
       port: 11560,
       soBroadcast: true,
       soRcvBuf: 64,
+      cacheSize: 1000,
+      timeToLiveInMinutes: 1440,
       handlerConfiguration: {
         handlerType: handlerConfigurationTypes.binary.value,
         charsetName: 'UTF-8',
@@ -487,7 +531,9 @@ export const templates = {
       'clientConfiguration.soRcvBuf': [Validators.required, Validators.min(1), Validators.max(65535)],
       'clientConfiguration.handlerConfiguration.handlerType': [Validators.required],
       'clientConfiguration.handlerConfiguration.charsetName': [Validators.required],
-      'clientConfiguration.handlerConfiguration.maxFrameLength': [Validators.required, Validators.min(1), Validators.max(65535)]
+      'clientConfiguration.handlerConfiguration.maxFrameLength': [Validators.required, Validators.min(1), Validators.max(65535)],
+      'clientConfiguration.cacheSize': [Validators.min(0)],
+      'clientConfiguration.timeToLiveInMinutes': [Validators.min(0), Validators.max(525600)]
     }
   },
   [IntegrationType.TCP]: {
@@ -498,6 +544,8 @@ export const templates = {
       soSndBuf: 64,
       soKeepaliveOption: false,
       tcpNoDelay: true,
+      cacheSize: 1000,
+      timeToLiveInMinutes: 1440,
       handlerConfiguration: {
         handlerType: handlerConfigurationTypes.binary.value,
         byteOrder: tcpBinaryByteOrder.littleEndian.value,
@@ -521,7 +569,9 @@ export const templates = {
       'clientConfiguration.handlerConfiguration.lengthFieldOffset': [Validators.required, Validators.min(0), Validators.max(8)],
       'clientConfiguration.handlerConfiguration.lengthFieldLength': [Validators.required, Validators.min(0), Validators.max(8)],
       'clientConfiguration.handlerConfiguration.lengthAdjustment': [Validators.required, Validators.min(0), Validators.max(8)],
-      'clientConfiguration.handlerConfiguration.initialBytesToStrip': [Validators.required, Validators.min(0), Validators.max(8)]
+      'clientConfiguration.handlerConfiguration.initialBytesToStrip': [Validators.required, Validators.min(0), Validators.max(8)],
+      'clientConfiguration.cacheSize': [Validators.min(0)],
+      'clientConfiguration.timeToLiveInMinutes': [Validators.min(0), Validators.max(525600)]
     }
   },
   [IntegrationType.KAFKA]: {
@@ -541,6 +591,33 @@ export const templates = {
       'clientConfiguration.topics': [Validators.required],
       'clientConfiguration.bootstrapServers': [Validators.required],
       'clientConfiguration.pollInterval': [Validators.required]
+    }
+  },
+  [IntegrationType.RABBITMQ]: {
+    clientConfiguration: {
+      exchangeName: '',
+      host: '',
+      port: 5672,
+      virtualHost: '',
+      username: '',
+      password: '',
+      downlinkTopic: '',
+      queues: 'my-queue',
+      routingKeys: 'my-routing-key',
+      connectionTimeout: 60000,
+      handshakeTimeout: 10000,
+      pollPeriod: 5000,
+      durable: false,
+      exclusive: true,
+      autoDelete: true,
+    },
+    fieldValidators: {
+      'clientConfiguration.host': [Validators.required],
+      'clientConfiguration.port': [Validators.required, Validators.min(1), Validators.max(65535)],
+      'clientConfiguration.queues': [Validators.required],
+      'clientConfiguration.connectionTimeout': [Validators.min(0)],
+      'clientConfiguration.handshakeTimeout': [Validators.min(0)],
+      'clientConfiguration.pollPeriod': [Validators.min(0)]
     }
   },
 
@@ -567,6 +644,21 @@ export const templates = {
     }
   },
 
+  [IntegrationType.PUB_SUB]: {
+    clientConfiguration: {
+      projectId: '',
+      subscriptionId: '',
+      serviceAccountKey: '',
+      serviceAccountKeyFileName: ''
+    },
+    fieldValidators: {
+      'clientConfiguration.projectId': [Validators.required],
+      'clientConfiguration.subscriptionId': [Validators.required],
+      'clientConfiguration.serviceAccountKey': [Validators.required],
+      'clientConfiguration.serviceAccountKeyFileName': [Validators.required]
+    }
+  },
+
   [IntegrationType.CUSTOM]: {
     clazz: '',
     configuration: '',
@@ -574,17 +666,17 @@ export const templates = {
       clazz: [Validators.required]
     }
   }
-}
+};
 
 export const opcUaMappingType = {
   ID: 'ID',
   FQN: 'Fully Qualified Name'
-}
+};
 
 export const extensionKeystoreType = {
   PKCS12: 'PKCS12',
   JKS: 'JKS'
-}
+};
 
 export enum InitialPositionInStream {
   LATEST = 'LATEST',
@@ -595,7 +687,7 @@ export enum InitialPositionInStream {
 export const identityType = {
   anonymous: 'extension.anonymous',
   username: 'extension.username'
-}
+};
 
 export const mqttQoSTypes = [
   {
@@ -609,4 +701,4 @@ export const mqttQoSTypes = [
   {
     value: 2,
     name: 'integration.mqtt-qos-exactly-once'
-  }]
+  }];

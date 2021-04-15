@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -186,5 +186,20 @@ export class EntityGroupService {
     }
     url += pageLink.toQuery();
     return this.http.get<PageData<T>>(url, defaultHttpOptionsFromConfig(config));
+  }
+
+  public getEdgeEntityGroups(edgeId: string, groupType: EntityType, config?: RequestConfig): Observable<Array<EntityGroupInfo>> {
+    return this.http.get<Array<EntityGroupInfo>>(`/api/entityGroups/edge/${edgeId}/${groupType}`,
+      defaultHttpOptionsFromConfig(config));
+  }
+
+  public assignEntityGroupToEdge(edgeId: string, entityGroupId: string, groupType: string, config?: RequestConfig): Observable<EntityGroup> {
+    return this.http.post<EntityGroup>(`/api/edge/${edgeId}/entityGroup/${entityGroupId}/${groupType}`,
+      defaultHttpOptionsFromConfig(config))
+  }
+
+  public unassignEntityGroupFromEdge(edgeId: string, entityGroupId: string, groupType: string, config?: RequestConfig): Observable<EntityGroup> {
+    return this.http.delete<EntityGroup>(`/api/edge/${edgeId}/entityGroup/${entityGroupId}/${groupType}`,
+      defaultHttpOptionsFromConfig(config));
   }
 }

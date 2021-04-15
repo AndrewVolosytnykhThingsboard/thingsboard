@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -31,15 +31,16 @@
 package org.thingsboard.rule.engine.api;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.thingsboard.server.common.data.ApiFeature;
+import org.thingsboard.server.common.data.ApiUsageStateMailMessage;
+import org.thingsboard.server.common.data.ApiUsageStateValue;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
 import org.thingsboard.server.common.data.id.BlobEntityId;
 import org.thingsboard.server.common.data.id.TenantId;
 
 import java.util.List;
-
-import javax.mail.MessagingException;
-import java.util.List;
 import java.util.Map;
+
 
 public interface MailService {
 
@@ -66,5 +67,7 @@ public interface MailService {
     void send(TenantId tenantId, String from, String to, String cc, String bcc, String subject, String body, boolean isHtml, List<BlobEntityId> attachments, Map<String, String> images) throws ThingsboardException;
 
     void sendAccountLockoutEmail(TenantId tenantId, String lockoutEmail, String email, Integer maxFailedLoginAttempts) throws ThingsboardException;
+
+    void sendApiFeatureStateEmail(TenantId tenantId, ApiFeature apiFeature, ApiUsageStateValue stateValue, String email, ApiUsageStateMailMessage msg) throws ThingsboardException;
 
 }

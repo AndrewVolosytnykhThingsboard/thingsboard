@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -33,11 +33,13 @@ package org.thingsboard.server.transport.coap;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.stereotype.Component;
 import org.thingsboard.server.common.transport.TransportContext;
-import org.thingsboard.server.transport.coap.adaptors.CoapTransportAdaptor;
+import org.thingsboard.server.transport.coap.adaptors.JsonCoapAdaptor;
+import org.thingsboard.server.transport.coap.adaptors.ProtoCoapAdaptor;
+import org.thingsboard.server.transport.coap.efento.adaptor.EfentoCoapAdaptor;
+
 
 /**
  * Created by ashvayka on 18.10.18.
@@ -48,19 +50,15 @@ import org.thingsboard.server.transport.coap.adaptors.CoapTransportAdaptor;
 public class CoapTransportContext extends TransportContext {
 
     @Getter
-    @Value("${transport.coap.bind_address}")
-    private String host;
-
-    @Getter
-    @Value("${transport.coap.bind_port}")
-    private Integer port;
-
-    @Getter
-    @Value("${transport.coap.timeout}")
-    private Long timeout;
+    @Autowired
+    private JsonCoapAdaptor jsonCoapAdaptor;
 
     @Getter
     @Autowired
-    private CoapTransportAdaptor adaptor;
+    private ProtoCoapAdaptor protoCoapAdaptor;
+
+    @Getter
+    @Autowired
+    private EfentoCoapAdaptor efentoCoapAdaptor;
 
 }

@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -39,6 +39,7 @@ import org.thingsboard.server.common.data.SearchTextBased;
 import org.thingsboard.server.common.data.TenantEntity;
 import org.thingsboard.server.common.data.id.ConverterId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.validation.NoXss;
 
 @EqualsAndHashCode(callSuper = true)
 public class Converter extends SearchTextBased<ConverterId> implements HasName, TenantEntity {
@@ -46,6 +47,7 @@ public class Converter extends SearchTextBased<ConverterId> implements HasName, 
     private static final long serialVersionUID = -1541581333235769915L;
 
     private TenantId tenantId;
+    @NoXss
     private String name;
     private ConverterType type;
     private boolean debugMode;

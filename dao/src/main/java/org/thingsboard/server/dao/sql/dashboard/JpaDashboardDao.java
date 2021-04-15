@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -34,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Component;
 import org.thingsboard.server.common.data.Dashboard;
+import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.dao.dashboard.DashboardDao;
 import org.thingsboard.server.dao.model.sql.DashboardEntity;
 import org.thingsboard.server.dao.sql.JpaAbstractSearchTextDao;
@@ -57,5 +58,10 @@ public class JpaDashboardDao extends JpaAbstractSearchTextDao<DashboardEntity, D
     @Override
     protected CrudRepository<DashboardEntity, UUID> getCrudRepository() {
         return dashboardRepository;
+    }
+
+    @Override
+    public Long countByTenantId(TenantId tenantId) {
+        return dashboardRepository.countByTenantId(tenantId.getId());
     }
 }

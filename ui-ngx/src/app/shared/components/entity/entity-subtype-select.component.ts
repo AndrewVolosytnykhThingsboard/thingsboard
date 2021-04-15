@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -40,6 +40,7 @@ import { DeviceService } from '@core/http/device.service';
 import { EntitySubtype, EntityType } from '@app/shared/models/entity-type.models';
 import { BroadcastService } from '@app/core/services/broadcast.service';
 import { AssetService } from '@core/http/asset.service';
+import { EdgeService } from '@core/http/edge.service';
 import { EntityViewService } from '@core/http/entity-view.service';
 
 @Component({
@@ -94,6 +95,7 @@ export class EntitySubTypeSelectComponent implements ControlValueAccessor, OnIni
               private deviceService: DeviceService,
               private assetService: AssetService,
               private entityViewService: EntityViewService,
+              private edgeService: EdgeService,
               private fb: FormBuilder) {
     this.subTypeFormGroup = this.fb.group({
       subType: ['']
@@ -130,6 +132,14 @@ export class EntitySubTypeSelectComponent implements ControlValueAccessor, OnIni
         this.entitySubtypeTitle = 'entity-view.entity-view-type';
         this.entitySubtypeRequiredText = 'entity-view.entity-view-type-required';
         this.broadcastSubscription = this.broadcast.on('entityViewSaved', () => {
+          this.subTypes = null;
+          this.subTypesOptionsSubject.next('');
+        });
+        break;
+      case EntityType.EDGE:
+        this.entitySubtypeTitle = 'edge.edge-type';
+        this.entitySubtypeRequiredText = 'edge.edge-type-required';
+        this.broadcastSubscription = this.broadcast.on('edgeSaved', () => {
           this.subTypes = null;
           this.subTypesOptionsSubject.next('');
         });
@@ -225,6 +235,9 @@ export class EntitySubTypeSelectComponent implements ControlValueAccessor, OnIni
           break;
         case EntityType.ENTITY_VIEW:
           this.subTypes = this.entityViewService.getEntityViewTypes({ignoreLoading: true});
+          break;
+        case EntityType.EDGE:
+          this.subTypes = this.edgeService.getEdgeTypes({ignoreLoading: true});
           break;
       }
       if (this.subTypes) {

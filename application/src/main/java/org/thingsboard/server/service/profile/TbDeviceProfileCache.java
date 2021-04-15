@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -38,11 +38,9 @@ import org.thingsboard.server.common.data.id.TenantId;
 
 public interface TbDeviceProfileCache extends RuleEngineDeviceProfileCache {
 
-    void put(DeviceProfile profile);
-
     void evict(TenantId tenantId, DeviceProfileId id);
 
-    void evict(DeviceId id);
+    void evict(TenantId tenantId, DeviceId id);
 
     DeviceProfile find(DeviceProfileId deviceProfileId);
 

@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -41,6 +41,7 @@ import org.thingsboard.server.gen.transport.TransportProtos.ToCoreNotificationMs
 import org.thingsboard.server.gen.transport.TransportProtos.ToRuleEngineMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToRuleEngineNotificationMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToTransportMsg;
+import org.thingsboard.server.gen.transport.TransportProtos.ToUsageStatsServiceMsg;
 import org.thingsboard.server.queue.TbQueueAdmin;
 import org.thingsboard.server.queue.TbQueueConsumer;
 import org.thingsboard.server.queue.TbQueueProducer;
@@ -159,6 +160,11 @@ public class PubSubTbRuleEngineQueueFactory implements TbRuleEngineQueueFactory 
         builder.maxRequestTimeout(jsInvokeSettings.getMaxRequestsTimeout());
         builder.pollInterval(jsInvokeSettings.getResponsePollInterval());
         return builder.build();
+    }
+
+    @Override
+    public TbQueueProducer<TbProtoQueueMsg<ToUsageStatsServiceMsg>> createToUsageStatsServiceMsgProducer() {
+        return new TbPubSubProducerTemplate<>(coreAdmin, pubSubSettings, coreSettings.getUsageStatsTopic());
     }
 
     @PreDestroy

@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -140,8 +140,20 @@ public class InMemoryMonolithQueueFactory implements TbCoreQueueFactory, TbRuleE
         return null;
     }
 
+    @Override
+    public TbQueueConsumer<TbProtoQueueMsg<TransportProtos.ToUsageStatsServiceMsg>> createToUsageStatsServiceMsgConsumer() {
+        return new InMemoryTbQueueConsumer<>(coreSettings.getUsageStatsTopic());
+    }
+
+    @Override
+    public TbQueueProducer<TbProtoQueueMsg<TransportProtos.ToUsageStatsServiceMsg>> createToUsageStatsServiceMsgProducer() {
+        return new InMemoryTbQueueProducer<>(coreSettings.getUsageStatsTopic());
+    }
+
     @Scheduled(fixedRateString = "${queue.in_memory.stats.print-interval-ms:60000}")
     private void printInMemoryStats() {
         storage.printStats();
     }
+
+
 }

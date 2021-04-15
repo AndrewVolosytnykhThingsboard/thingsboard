@@ -2,7 +2,7 @@
 
     ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 
-    Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+    Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 
     NOTICE: All information contained herein is, and remains
     the property of ThingsBoard, Inc. and its suppliers,
@@ -35,7 +35,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.thingsboard</groupId>
-        <version>3.2.0PE-SNAPSHOT</version>
+        <version>3.3.0PE-SNAPSHOT</version>
         <artifactId>thingsboard</artifactId>
     </parent>
     <artifactId>application</artifactId>
@@ -98,6 +98,10 @@
         </dependency>
         <dependency>
             <groupId>org.thingsboard.common.integration</groupId>
+            <artifactId>gcloud-integrations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.thingsboard.common.integration</groupId>
             <artifactId>aws-integrations</artifactId>
         </dependency>
         <dependency>
@@ -111,6 +115,10 @@
         <dependency>
             <groupId>org.thingsboard.common.integration</groupId>
             <artifactId>kafka-integrations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.thingsboard.common.integration</groupId>
+            <artifactId>rabbitmq-integrations</artifactId>
         </dependency>
         <dependency>
             <groupId>org.thingsboard.common.integration</groupId>
@@ -137,6 +145,10 @@
             <artifactId>coap</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.thingsboard.common.transport</groupId>
+            <artifactId>lwm2m</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.thingsboard</groupId>
             <artifactId>dao</artifactId>
         </dependency>
@@ -147,6 +159,10 @@
         <dependency>
             <groupId>org.thingsboard.common</groupId>
             <artifactId>stats</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.thingsboard.common</groupId>
+            <artifactId>edge-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.thingsboard</groupId>
@@ -197,10 +213,6 @@
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-oauth2</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-oauth2-client</artifactId>
         </dependency>
@@ -247,6 +259,14 @@
         <dependency>
             <groupId>com.sun.mail</groupId>
             <artifactId>javax.mail</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.twilio.sdk</groupId>
+            <artifactId>twilio</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-sns</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.curator</groupId>
@@ -326,7 +346,7 @@
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
+            <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

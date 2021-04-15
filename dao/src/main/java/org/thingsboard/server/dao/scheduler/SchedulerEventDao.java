@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -30,17 +30,27 @@
  */
 package org.thingsboard.server.dao.scheduler;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.scheduler.SchedulerEvent;
-import org.thingsboard.server.common.data.scheduler.SchedulerEventInfo;
 import org.thingsboard.server.dao.Dao;
+import org.thingsboard.server.dao.TenantEntityDao;
 
 import java.util.List;
 import java.util.UUID;
 
 /**
  * The Interface SchedulerEventDao.
- *
  */
-public interface SchedulerEventDao extends Dao<SchedulerEvent> {
+public interface SchedulerEventDao extends Dao<SchedulerEvent>, TenantEntityDao {
 
+    /**
+     * Find scheduler event by tenantId, edgeId and page link.
+     *
+     * @param tenantId the tenantId
+     * @param edgeId   the edgeId
+     * @param pageLink the page link
+     * @return the list of scheduler event objects
+     */
+    ListenableFuture<List<SchedulerEvent>> findSchedulerEventsByTenantIdAndEdgeId(UUID tenantId, UUID edgeId, PageLink pageLink);
 }

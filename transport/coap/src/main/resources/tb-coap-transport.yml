@@ -1,7 +1,7 @@
 #
 # ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 #
-# Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+# Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 #
 # NOTICE: All information contained herein is, and remains
 # the property of ThingsBoard, Inc. and its suppliers,
@@ -61,6 +61,28 @@ transport:
     bind_address: "${COAP_BIND_ADDRESS:0.0.0.0}"
     bind_port: "${COAP_BIND_PORT:5683}"
     timeout: "${COAP_TIMEOUT:10000}"
+    dtls:
+      # Enable/disable DTLS 1.2 support
+      enabled: "${COAP_DTLS_ENABLED:false}"
+      # CoAP DTLS bind address
+      bind_address: "${COAP_DTLS_BIND_ADDRESS:0.0.0.0}"
+      # CoAP DTLS bind port
+      bind_port: "${COAP_DTLS_BIND_PORT:5684}"
+      # Secure mode. Allowed values: NO_AUTH, X509
+      mode: "${COAP_DTLS_SECURE_MODE:NO_AUTH}"
+      # Path to the key store that holds the certificate
+      key_store: "${COAP_DTLS_KEY_STORE:coapserver.jks}"
+      # Password used to access the key store
+      key_store_password: "${COAP_DTLS_KEY_STORE_PASSWORD:server_ks_password}"
+      # Password used to access the key
+      key_password: "${COAP_DTLS_KEY_PASSWORD:server_key_password}"
+      # Key alias
+      key_alias: "${COAP_DTLS_KEY_ALIAS:serveralias}"
+      # Skip certificate validity check for client certificates.
+      skip_validity_check_for_client_cert: "${COAP_DTLS_SKIP_VALIDITY_CHECK_FOR_CLIENT_CERT:false}"
+      x509:
+        dtls_session_inactivity_timeout: "${TB_COAP_X509_DTLS_SESSION_INACTIVITY_TIMEOUT:86400000}"
+        dtls_session_report_timeout: "${TB_COAP_X509_DTLS_SESSION_REPORT_TIMEOUT:1800000}"
   sessions:
     inactivity_timeout: "${TB_TRANSPORT_SESSIONS_INACTIVITY_TIMEOUT:300000}"
     report_timeout: "${TB_TRANSPORT_SESSIONS_REPORT_TIMEOUT:30000}"
@@ -88,11 +110,11 @@ queue:
       security.protocol: "${TB_QUEUE_KAFKA_CONFLUENT_SECURITY_PROTOCOL:SASL_SSL}"
     other:
     topic-properties:
-      rule-engine: "${TB_QUEUE_KAFKA_RE_TOPIC_PROPERTIES:retention.ms:604800000;segment.bytes:26214400;retention.bytes:1048576000;partitions:1}"
-      core: "${TB_QUEUE_KAFKA_CORE_TOPIC_PROPERTIES:retention.ms:604800000;segment.bytes:26214400;retention.bytes:1048576000;partitions:1}"
-      transport-api: "${TB_QUEUE_KAFKA_TA_TOPIC_PROPERTIES:retention.ms:604800000;segment.bytes:26214400;retention.bytes:1048576000;partitions:1}"
-      notifications: "${TB_QUEUE_KAFKA_NOTIFICATIONS_TOPIC_PROPERTIES:retention.ms:604800000;segment.bytes:26214400;retention.bytes:1048576000;partitions:1}"
-      js-executor: "${TB_QUEUE_KAFKA_JE_TOPIC_PROPERTIES:retention.ms:604800000;segment.bytes:26214400;retention.bytes:104857600;partitions:100}"
+      rule-engine: "${TB_QUEUE_KAFKA_RE_TOPIC_PROPERTIES:retention.ms:604800000;segment.bytes:26214400;retention.bytes:1048576000;partitions:1;min.insync.replicas:1}"
+      core: "${TB_QUEUE_KAFKA_CORE_TOPIC_PROPERTIES:retention.ms:604800000;segment.bytes:26214400;retention.bytes:1048576000;partitions:1;min.insync.replicas:1}"
+      transport-api: "${TB_QUEUE_KAFKA_TA_TOPIC_PROPERTIES:retention.ms:604800000;segment.bytes:26214400;retention.bytes:1048576000;partitions:1;min.insync.replicas:1}"
+      notifications: "${TB_QUEUE_KAFKA_NOTIFICATIONS_TOPIC_PROPERTIES:retention.ms:604800000;segment.bytes:26214400;retention.bytes:1048576000;partitions:1;min.insync.replicas:1}"
+      js-executor: "${TB_QUEUE_KAFKA_JE_TOPIC_PROPERTIES:retention.ms:604800000;segment.bytes:26214400;retention.bytes:104857600;partitions:100;min.insync.replicas:1}"
   aws_sqs:
     use_default_credential_provider_chain: "${TB_QUEUE_AWS_SQS_USE_DEFAULT_CREDENTIAL_PROVIDER_CHAIN:false}"
     access_key_id: "${TB_QUEUE_AWS_SQS_ACCESS_KEY_ID:YOUR_KEY}"
@@ -160,6 +182,7 @@ queue:
     poll-interval: "${TB_QUEUE_CORE_POLL_INTERVAL_MS:25}"
     partitions: "${TB_QUEUE_CORE_PARTITIONS:10}"
     pack-processing-timeout: "${TB_QUEUE_CORE_PACK_PROCESSING_TIMEOUT_MS:60000}"
+    usage-stats-topic: "${TB_QUEUE_US_TOPIC:tb_usage_stats}"
     stats:
       enabled: "${TB_QUEUE_CORE_STATS_ENABLED:false}"
       print-interval-ms: "${TB_QUEUE_CORE_STATS_PRINT_INTERVAL_MS:10000}"
@@ -174,8 +197,6 @@ queue:
     max_requests_timeout: "${REMOTE_JS_MAX_REQUEST_TIMEOUT:10000}"
     # JS response poll interval
     response_poll_interval: "${REMOTE_JS_RESPONSE_POLL_INTERVAL_MS:25}"
-    # JS response auto commit interval
-    response_auto_commit_interval: "${REMOTE_JS_RESPONSE_AUTO_COMMIT_INTERVAL_MS:100}"
   rule-engine:
     topic: "${TB_QUEUE_RULE_ENGINE_TOPIC:tb_rule_engine}"
     poll-interval: "${TB_QUEUE_RULE_ENGINE_POLL_INTERVAL_MS:25}"

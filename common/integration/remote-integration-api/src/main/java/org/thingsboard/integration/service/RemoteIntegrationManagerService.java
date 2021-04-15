@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -258,7 +258,8 @@ public class RemoteIntegrationManagerService {
         DefaultIntegrationDownlinkMsg downlinkMsg = new DefaultIntegrationDownlinkMsg(
                 integration.getConfiguration().getTenantId(),
                 integration.getConfiguration().getId(),
-                TbMsg.fromBytes(ServiceQueue.MAIN, deviceDownlinkDataProto.getTbMsg().toByteArray(), TbMsgCallback.EMPTY));
+                TbMsg.fromBytes(ServiceQueue.MAIN, deviceDownlinkDataProto.getTbMsg().toByteArray(), TbMsgCallback.EMPTY),
+                deviceDownlinkDataProto.getDeviceName());
 
         integration.onDownlinkMsg(downlinkMsg);
     }
@@ -338,6 +339,8 @@ public class RemoteIntegrationManagerService {
         switch (IntegrationType.valueOf(type)) {
             case HTTP:
                 return newInstance("org.thingsboard.integration.http.basic.BasicHttpIntegration");
+            case LORIOT:
+                return newInstance("org.thingsboard.integration.http.basic.LoriotIntegration");
             case SIGFOX:
                 return newInstance("org.thingsboard.integration.http.sigfox.SigFoxIntegration");
             case OCEANCONNECT:
@@ -348,10 +351,14 @@ public class RemoteIntegrationManagerService {
                 return newInstance("org.thingsboard.integration.http.thingpark.ThingParkIntegrationEnterprise");
             case TMOBILE_IOT_CDP:
                 return newInstance("org.thingsboard.integration.http.tmobile.TMobileIotCdpIntegration");
+            case CHIRPSTACK:
+                return newInstance("org.thingsboard.integration.http.chirpstack.ChirpStackIntegration");
             case MQTT:
                 return newInstance("org.thingsboard.integration.mqtt.basic.BasicMqttIntegration");
             case AWS_IOT:
                 return newInstance("org.thingsboard.integration.mqtt.aws.AwsIotIntegration");
+            case PUB_SUB:
+                return newInstance("org.thingsboard.gcloud.pubsub.PubSubIntegration");
             case IBM_WATSON_IOT:
                 return newInstance("org.thingsboard.integration.mqtt.ibm.IbmWatsonIotIntegration");
             case TTI:
@@ -373,6 +380,8 @@ public class RemoteIntegrationManagerService {
                 return newInstance("org.thingsboard.integration.kinesis.AwsKinesisIntegration");
             case KAFKA:
                 return newInstance("org.thingsboard.integration.kafka.basic.BasicKafkaIntegration");
+            case RABBITMQ:
+                return newInstance("org.thingsboard.integration.rabbitmq.basic.BasicRabbitMQIntegration");
             case APACHE_PULSAR:
                 return newInstance("org.thingsboard.integration.apache.pulsar.basic.BasicPulsarIntegration");
             case CUSTOM:
@@ -383,7 +392,7 @@ public class RemoteIntegrationManagerService {
     }
 
     private ThingsboardPlatformIntegration newInstance(String clazz) throws Exception {
-        return (ThingsboardPlatformIntegration) Class.forName(clazz).newInstance();
+        return (ThingsboardPlatformIntegration) Class.forName(clazz).getDeclaredConstructor().newInstance();
     }
 
     private void processHandleMessages() {

@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -34,6 +34,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Component;
+import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.integration.Integration;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
@@ -89,4 +90,8 @@ public class JpaIntegrationDao extends JpaAbstractSearchTextDao<IntegrationEntit
         return integrationRepository;
     }
 
+    @Override
+    public Long countByTenantId(TenantId tenantId) {
+        return integrationRepository.countByTenantId(tenantId.getId());
+    }
 }

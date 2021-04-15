@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -34,6 +34,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.eclipse.leshan.core.model.DDFFileParser;
+import org.eclipse.leshan.core.model.DefaultDDFFileValidator;
+import org.eclipse.leshan.core.model.InvalidDDFFileException;
+import org.eclipse.leshan.core.model.ObjectModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -45,15 +49,21 @@ import org.thingsboard.server.common.data.group.EntityGroup;
 import org.thingsboard.server.common.data.id.AdminSettingsId;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.RuleChainId;
+import org.thingsboard.server.common.data.ResourceType;
+import org.thingsboard.server.common.data.TbResource;
+import org.thingsboard.server.common.data.id.CustomerId;
+import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.oauth2.OAuth2ClientRegistrationTemplate;
 import org.thingsboard.server.common.data.rule.RuleChain;
 import org.thingsboard.server.common.data.rule.RuleChainMetaData;
-import org.thingsboard.server.common.data.widget.WidgetType;
+import org.thingsboard.server.common.data.widget.WidgetTypeDetails;
 import org.thingsboard.server.common.data.widget.WidgetsBundle;
 import org.thingsboard.server.dao.dashboard.DashboardService;
 import org.thingsboard.server.dao.group.EntityGroupService;
+import org.thingsboard.server.dao.exception.DataValidationException;
 import org.thingsboard.server.dao.oauth2.OAuth2ConfigTemplateService;
+import org.thingsboard.server.dao.resource.TbResourceService;
 import org.thingsboard.server.dao.rule.RuleChainService;
 import org.thingsboard.server.dao.settings.AdminSettingsService;
 import org.thingsboard.server.dao.widget.WidgetTypeService;
@@ -70,6 +80,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Base64;
 import java.util.Optional;
 
 import static org.thingsboard.server.service.install.DatabaseHelper.objectMapper;
@@ -98,8 +109,12 @@ public class InstallScripts {
     public static final String DASHBOARDS_DIR = "dashboards";
     public static final String MAIL_TEMPLATES_DIR = "mail_templates";
     public static final String MAIL_TEMPLATES_JSON = "mail_templates.json";
+    public static final String MODELS_DIR = "models";
+    public static final String CREDENTIALS_DIR = "credentials";
+    public static final String EDGE_MANAGEMENT = "edge_management";
 
     public static final String JSON_EXT = ".json";
+    public static final String XML_EXT = ".xml";
 
     private static final Pattern velocityVarPattern = Pattern.compile("\\$([a-zA-Z]+)");
     private static final String velocityVarToFreeMakerReplacementPattern = "\\${$1}";
@@ -128,7 +143,10 @@ public class InstallScripts {
     @Autowired
     private OAuth2ConfigTemplateService oAuth2TemplateService;
 
-    public Path getTenantRuleChainsDir() {
+    @Autowired
+    private TbResourceService resourceService;
+
+    private Path getTenantRuleChainsDir() {
         return Paths.get(getDataDir(), JSON_DIR, TENANT_DIR, RULE_CHAINS_DIR);
     }
 
@@ -136,8 +154,12 @@ public class InstallScripts {
         return Paths.get(getDataDir(), JSON_DIR, TENANT_DIR, ROOT_RULE_CHAIN_DIR, ROOT_RULE_CHAIN_JSON);
     }
 
-    public Path getDeviceProfileDefaultRuleChainTemplateFilePath() {
+    private Path getDeviceProfileDefaultRuleChainTemplateFilePath() {
         return Paths.get(getDataDir(), JSON_DIR, TENANT_DIR, DEVICE_PROFILE_DIR, "rule_chain_template.json");
+    }
+
+    private Path getEdgeRuleChainsDir() {
+        return Paths.get(getDataDir(), JSON_DIR, TENANT_DIR, EDGE_MANAGEMENT, RULE_CHAINS_DIR);
     }
 
     public String getDataDir() {
@@ -187,6 +209,21 @@ public class InstallScripts {
         }
     }
 
+    private void loadRuleChainsFromPath(TenantId tenantId, Path ruleChainsPath) throws IOException {
+        try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(ruleChainsPath, path -> path.toString().endsWith(InstallScripts.JSON_EXT))) {
+            dirStream.forEach(
+                    path -> {
+                        try {
+                            createRuleChainFromFile(tenantId, path, null);
+                        } catch (Exception e) {
+                            log.error("Unable to load rule chain from json: [{}]", path.toString());
+                            throw new RuntimeException("Unable to load rule chain from json", e);
+                        }
+                    }
+            );
+        }
+    }
+
     public RuleChain createDefaultRuleChain(TenantId tenantId, String ruleChainName) throws IOException {
         return createRuleChainFromFile(tenantId, getDeviceProfileDefaultRuleChainTemplateFilePath(), ruleChainName);
     }
@@ -196,6 +233,10 @@ public class InstallScripts {
         return this.loadRuleChain(templateFilePath, ruleChainJson, tenantId, newRuleChainName);
     }
 
+    public void createDefaultEdgeRuleChains(TenantId tenantId) throws IOException {
+        Path edgeChainsDir = getEdgeRuleChainsDir();
+        loadAdditionalTenantRuleChains(tenantId, edgeChainsDir);
+    }
 
     public void loadSystemWidgets() throws Exception {
         Path widgetBundlesDir = Paths.get(getDataDir(), JSON_DIR, SYSTEM_DIR, WIDGET_BUNDLES_DIR);
@@ -211,9 +252,9 @@ public class InstallScripts {
                             widgetTypesArrayJson.forEach(
                                     widgetTypeJson -> {
                                         try {
-                                            WidgetType widgetType = objectMapper.treeToValue(widgetTypeJson, WidgetType.class);
-                                            widgetType.setBundleAlias(savedWidgetsBundle.getAlias());
-                                            widgetTypeService.saveWidgetType(widgetType);
+                                            WidgetTypeDetails widgetTypeDetails = objectMapper.treeToValue(widgetTypeJson, WidgetTypeDetails.class);
+                                            widgetTypeDetails.setBundleAlias(savedWidgetsBundle.getAlias());
+                                            widgetTypeService.saveWidgetType(widgetTypeDetails);
                                         } catch (Exception e) {
                                             log.error("Unable to load widget type from json: [{}]", path.toString());
                                             throw new RuntimeException("Unable to load widget type from json", e);
@@ -226,6 +267,29 @@ public class InstallScripts {
                         }
                     }
             );
+        }
+    }
+
+    public void loadSystemLwm2mResources() throws Exception {
+        Path modelsDir = Paths.get(getDataDir(), MODELS_DIR);
+        if (Files.isDirectory(modelsDir)) {
+            try (DirectoryStream<Path> dirStream = Files.newDirectoryStream(modelsDir, path -> path.toString().endsWith(XML_EXT))) {
+                dirStream.forEach(
+                        path -> {
+                            try {
+                                byte[] fileBytes = Files.readAllBytes(path);
+                                TbResource resource = new TbResource();
+                                resource.setFileName(path.getFileName().toString());
+                                resource.setTenantId(TenantId.SYS_TENANT_ID);
+                                resource.setResourceType(ResourceType.LWM2M_MODEL);
+                                resource.setData(Base64.getEncoder().encodeToString(fileBytes));
+                                resourceService.saveResource(resource);
+                            } catch (Exception e) {
+                                throw new DataValidationException(String.format("Could not parse the XML of objectModel with name %s", path.toString()));
+                            }
+                        }
+                );
+            }
         }
     }
 
@@ -300,10 +364,14 @@ public class InstallScripts {
     }
 
     public void loadDemoRuleChains(TenantId tenantId) throws Exception {
-        Map<String, RuleChainId> ruleChainIdMap = loadAdditionalTenantRuleChains(tenantId, getTenantRuleChainsDir());
-        ruleChainIdMap.putAll(loadAdditionalTenantRuleChains(tenantId, Paths.get(getDataDir(), JSON_DIR, DEMO_DIR, RULE_CHAINS_DIR)));
-        Path rootRuleChainFile = Paths.get(getDataDir(), JSON_DIR, DEMO_DIR, ROOT_RULE_CHAIN_DIR).resolve("root_rule_chain.json");
-        loadRootRuleChain(tenantId, ruleChainIdMap, rootRuleChainFile);
+        createDefaultRuleChains(tenantId);
+        createDefaultRuleChain(tenantId, "Thermostat");
+        loadEdgeDemoRuleChains(tenantId);
+    }
+
+    private void loadEdgeDemoRuleChains(TenantId tenantId) throws Exception {
+        Path edgeDemoRuleChainsDir = Paths.get(getDataDir(), JSON_DIR, DEMO_DIR, EDGE_MANAGEMENT, RULE_CHAINS_DIR);
+        loadRuleChainsFromPath(tenantId, edgeDemoRuleChainsDir);
     }
 
     private void loadRootRuleChain(TenantId tenantId, Map<String, RuleChainId> ruleChainIdMap, Path rootRuleChainFile) throws IOException {

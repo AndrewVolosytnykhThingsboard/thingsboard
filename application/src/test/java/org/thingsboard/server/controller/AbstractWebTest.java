@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -33,12 +33,12 @@ package org.thingsboard.server.controller;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Header;
 import io.jsonwebtoken.Jwt;
 import io.jsonwebtoken.Jwts;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.Matcher;
 import org.junit.After;
@@ -64,24 +64,28 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.context.WebApplicationContext;
-import org.thingsboard.server.common.data.AdminSettings;
 import org.thingsboard.server.common.data.Customer;
 import org.thingsboard.server.common.data.DeviceProfile;
 import org.thingsboard.server.common.data.DeviceProfileType;
 import org.thingsboard.server.common.data.DeviceTransportType;
+import org.thingsboard.server.common.data.Edge;
 import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.device.profile.DefaultDeviceProfileConfiguration;
 import org.thingsboard.server.common.data.device.profile.DefaultDeviceProfileTransportConfiguration;
 import org.thingsboard.server.common.data.device.profile.DeviceProfileData;
 import org.thingsboard.server.common.data.id.EntityGroupId;
+import org.thingsboard.server.common.data.device.profile.DeviceProfileTransportConfiguration;
+import org.thingsboard.server.common.data.device.profile.MqttDeviceProfileTransportConfiguration;
+import org.thingsboard.server.common.data.device.profile.MqttTopics;
+import org.thingsboard.server.common.data.device.profile.ProtoTransportPayloadConfiguration;
+import org.thingsboard.server.common.data.device.profile.TransportPayloadTypeConfiguration;
 import org.thingsboard.server.common.data.id.HasId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.page.TimePageLink;
 import org.thingsboard.server.common.data.security.Authority;
 import org.thingsboard.server.config.ThingsboardSecurityConfiguration;
-import org.thingsboard.server.dao.util.mapping.JacksonUtil;
 import org.thingsboard.server.service.mail.TestMailService;
 import org.thingsboard.server.service.security.auth.jwt.RefreshTokenRequest;
 import org.thingsboard.server.service.security.auth.rest.LoginRequest;
@@ -343,7 +347,7 @@ public abstract class AbstractWebTest {
         }
     }
 
-    protected DeviceProfile createDeviceProfile(String name) {
+    protected DeviceProfile createDeviceProfile(String name, DeviceProfileTransportConfiguration deviceProfileTransportConfiguration) {
         DeviceProfile deviceProfile = new DeviceProfile();
         deviceProfile.setName(name);
         deviceProfile.setType(DeviceProfileType.DEFAULT);
@@ -351,14 +355,33 @@ public abstract class AbstractWebTest {
         deviceProfile.setDescription(name + " Test");
         DeviceProfileData deviceProfileData = new DeviceProfileData();
         DefaultDeviceProfileConfiguration configuration = new DefaultDeviceProfileConfiguration();
-        DefaultDeviceProfileTransportConfiguration transportConfiguration = new DefaultDeviceProfileTransportConfiguration();
         deviceProfileData.setConfiguration(configuration);
-        deviceProfileData.setTransportConfiguration(transportConfiguration);
+        if (deviceProfileTransportConfiguration != null) {
+            deviceProfileData.setTransportConfiguration(deviceProfileTransportConfiguration);
+        } else {
+            deviceProfileData.setTransportConfiguration(new DefaultDeviceProfileTransportConfiguration());
+        }
         deviceProfile.setProfileData(deviceProfileData);
         deviceProfile.setDefault(false);
         deviceProfile.setDefaultRuleChainId(null);
         return deviceProfile;
     }
+
+    protected MqttDeviceProfileTransportConfiguration createMqttDeviceProfileTransportConfiguration(TransportPayloadTypeConfiguration transportPayloadTypeConfiguration) {
+        MqttDeviceProfileTransportConfiguration mqttDeviceProfileTransportConfiguration = new MqttDeviceProfileTransportConfiguration();
+        mqttDeviceProfileTransportConfiguration.setDeviceTelemetryTopic(MqttTopics.DEVICE_TELEMETRY_TOPIC);
+        mqttDeviceProfileTransportConfiguration.setDeviceTelemetryTopic(MqttTopics.DEVICE_ATTRIBUTES_TOPIC);
+        mqttDeviceProfileTransportConfiguration.setTransportPayloadTypeConfiguration(transportPayloadTypeConfiguration);
+        return mqttDeviceProfileTransportConfiguration;
+    }
+
+    protected ProtoTransportPayloadConfiguration createProtoTransportPayloadConfiguration(String deviceAttributesProtoSchema, String deviceTelemetryProtoSchema) {
+        ProtoTransportPayloadConfiguration protoTransportPayloadConfiguration = new ProtoTransportPayloadConfiguration();
+        protoTransportPayloadConfiguration.setDeviceAttributesProtoSchema(deviceAttributesProtoSchema);
+        protoTransportPayloadConfiguration.setDeviceTelemetryProtoSchema(deviceTelemetryProtoSchema);
+        return protoTransportPayloadConfiguration;
+    }
+
 
     protected ResultActions doGet(String urlTemplate, Object... urlVariables) throws Exception {
         MockHttpServletRequestBuilder getRequest = get(urlTemplate, urlVariables);
@@ -376,6 +399,10 @@ public abstract class AbstractWebTest {
 
     protected <T> T doGetAsync(String urlTemplate, Class<T> responseClass, Object... urlVariables) throws Exception {
         return readResponse(doGetAsync(urlTemplate, urlVariables).andExpect(status().isOk()), responseClass);
+    }
+
+    protected <T> T doGetAsyncTyped(String urlTemplate, TypeReference<T> responseType, Object... urlVariables) throws Exception {
+        return readResponse(doGetAsync(urlTemplate, urlVariables).andExpect(status().isOk()), responseType);
     }
 
     protected ResultActions doGetAsync(String urlTemplate, Object... urlVariables) throws Exception {
@@ -462,6 +489,10 @@ public abstract class AbstractWebTest {
 
     protected <T, R> R doPostWithTypedResponse(String urlTemplate, T content, TypeReference<R> responseType, String... params) throws Exception {
         return readResponse(doPost(urlTemplate, content, params).andExpect(status().isOk()), responseType);
+    }
+
+    protected <T, R> R doPostWithTypedResponse(String urlTemplate, T content, TypeReference<R> responseType, ResultMatcher resultMatcher, String... params) throws Exception {
+        return readResponse(doPost(urlTemplate, content, params).andExpect(resultMatcher), responseType);
     }
 
     protected <T> T doPostAsync(String urlTemplate, T content, Class<T> responseClass, ResultMatcher resultMatcher, String... params) throws Exception {
@@ -557,4 +588,18 @@ public abstract class AbstractWebTest {
         return jsonPath("$.message", matcher);
     }
 
+    protected Edge constructEdge(String name, String type) {
+        return constructEdge(tenantId, name, type);
+    }
+    protected Edge constructEdge(TenantId tenantId, String name, String type) {
+        Edge edge = new Edge();
+        edge.setTenantId(tenantId);
+        edge.setName(name);
+        edge.setType(type);
+        edge.setSecret(RandomStringUtils.randomAlphanumeric(20));
+        edge.setRoutingKey(RandomStringUtils.randomAlphanumeric(20));
+        edge.setEdgeLicenseKey(RandomStringUtils.randomAlphanumeric(20));
+        edge.setCloudEndpoint("http://localhost:8080");
+        return edge;
+    }
 }

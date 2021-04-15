@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -30,17 +30,22 @@
  */
 package org.thingsboard.server.dao.rule;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
+import org.thingsboard.server.common.data.page.TimePageLink;
 import org.thingsboard.server.common.data.rule.RuleChain;
+import org.thingsboard.server.common.data.rule.RuleChainType;
 import org.thingsboard.server.dao.Dao;
+import org.thingsboard.server.dao.TenantEntityDao;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
  * Created by igor on 3/12/18.
  */
-public interface RuleChainDao extends Dao<RuleChain> {
+public interface RuleChainDao extends Dao<RuleChain>, TenantEntityDao {
 
     /**
      * Find rule chains by tenantId and page link.
@@ -51,4 +56,31 @@ public interface RuleChainDao extends Dao<RuleChain> {
      */
     PageData<RuleChain> findRuleChainsByTenantId(UUID tenantId, PageLink pageLink);
 
+    /**
+     * Find rule chains by tenantId, type and page link.
+     *
+     * @param tenantId the tenantId
+     * @param type the type
+     * @param pageLink the page link
+     * @return the list of rule chain objects
+     */
+    PageData<RuleChain> findRuleChainsByTenantIdAndType(UUID tenantId, RuleChainType type, PageLink pageLink);
+
+    /**
+     * Find rule chains by tenantId, edgeId and page link.
+     *
+     * @param tenantId the tenantId
+     * @param edgeId the edgeId
+     * @param pageLink the page link
+     * @return the list of rule chain objects
+     */
+    PageData<RuleChain> findRuleChainsByTenantIdAndEdgeId(UUID tenantId, UUID edgeId, PageLink pageLink);
+
+    /**
+     * Find auto assign to edge rule chains by tenantId.
+     *
+     * @param tenantId the tenantId
+     * @return the list of rule chain objects
+     */
+    ListenableFuture<List<RuleChain>> findAutoAssignToEdgeRuleChainsByTenantId(UUID tenantId);
 }

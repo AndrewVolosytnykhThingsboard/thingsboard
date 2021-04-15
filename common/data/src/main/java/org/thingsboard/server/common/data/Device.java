@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -40,6 +40,7 @@ import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.DeviceProfileId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.validation.NoXss;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -53,8 +54,11 @@ public class Device extends SearchTextBasedWithAdditionalInfo<DeviceId> implemen
 
     private TenantId tenantId;
     private CustomerId customerId;
+    @NoXss
     private String name;
+    @NoXss
     private String type;
+    @NoXss
     private String label;
     private DeviceProfileId deviceProfileId;
     private transient DeviceData deviceData;
@@ -78,6 +82,17 @@ public class Device extends SearchTextBasedWithAdditionalInfo<DeviceId> implemen
         this.label = device.getLabel();
         this.deviceProfileId = device.getDeviceProfileId();
         this.setDeviceData(device.getDeviceData());
+    }
+
+    public Device updateDevice(Device device) {
+        this.tenantId = device.getTenantId();
+        this.customerId = device.getCustomerId();
+        this.name = device.getName();
+        this.type = device.getType();
+        this.label = device.getLabel();
+        this.deviceProfileId = device.getDeviceProfileId();
+        this.setDeviceData(device.getDeviceData());
+        return this;
     }
 
     public TenantId getTenantId() {

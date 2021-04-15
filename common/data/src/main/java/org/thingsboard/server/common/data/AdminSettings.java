@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -32,11 +32,13 @@ package org.thingsboard.server.common.data;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.thingsboard.server.common.data.id.AdminSettingsId;
+import org.thingsboard.server.common.data.validation.NoXss;
 
 public class AdminSettings extends BaseData<AdminSettingsId> {
 
     private static final long serialVersionUID = -7670322981725511892L;
-    
+
+    @NoXss
     private String key;
     private transient JsonNode jsonValue;
     

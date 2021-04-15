@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -56,6 +56,7 @@ import org.thingsboard.server.dao.timeseries.TimeseriesService;
 import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.queue.discovery.PartitionChangeEvent;
 import org.thingsboard.server.queue.discovery.PartitionService;
+import org.thingsboard.server.queue.discovery.TbApplicationEventListener;
 import org.thingsboard.server.service.queue.TbClusterService;
 import org.thingsboard.server.service.subscription.SubscriptionManagerService;
 import org.thingsboard.server.service.subscription.TbSubscriptionUtils;
@@ -76,7 +77,7 @@ import java.util.function.Consumer;
  * Created by ashvayka on 27.03.18.
  */
 @Slf4j
-public abstract class AbstractSubscriptionService implements ApplicationListener<PartitionChangeEvent> {
+public abstract class AbstractSubscriptionService extends TbApplicationEventListener<PartitionChangeEvent>{
 
     protected final Set<TopicPartitionInfo> currentPartitions = ConcurrentHashMap.newKeySet();
 
@@ -112,18 +113,17 @@ public abstract class AbstractSubscriptionService implements ApplicationListener
     }
 
     @Override
-    @EventListener(PartitionChangeEvent.class)
-    public void onApplicationEvent(PartitionChangeEvent partitionChangeEvent) {
+    protected void onTbApplicationEvent(PartitionChangeEvent partitionChangeEvent) {
         if (ServiceType.TB_CORE.equals(partitionChangeEvent.getServiceType())) {
             currentPartitions.clear();
             currentPartitions.addAll(partitionChangeEvent.getPartitions());
         }
     }
 
-    protected void addWsCallback(ListenableFuture<List<Void>> saveFuture, Consumer<Void> callback) {
-        Futures.addCallback(saveFuture, new FutureCallback<List<Void>>() {
+    protected <T> void addWsCallback(ListenableFuture<T> saveFuture, Consumer<T> callback) {
+        Futures.addCallback(saveFuture, new FutureCallback<T>() {
             @Override
-            public void onSuccess(@Nullable List<Void> result) {
+            public void onSuccess(@Nullable T result) {
                 callback.accept(null);
             }
 

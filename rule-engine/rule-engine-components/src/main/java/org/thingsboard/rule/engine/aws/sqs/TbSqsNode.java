@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -41,15 +41,18 @@ import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.google.common.util.concurrent.ListenableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.thingsboard.rule.engine.api.RuleNode;
+import org.thingsboard.rule.engine.api.TbContext;
+import org.thingsboard.rule.engine.api.TbNode;
+import org.thingsboard.rule.engine.api.TbNodeConfiguration;
+import org.thingsboard.rule.engine.api.TbNodeException;
 import org.thingsboard.rule.engine.api.util.TbNodeUtils;
-import org.thingsboard.rule.engine.api.*;
 import org.thingsboard.server.common.data.plugin.ComponentType;
 import org.thingsboard.server.common.msg.TbMsg;
 import org.thingsboard.server.common.msg.TbMsgMetaData;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import static org.thingsboard.common.util.DonAsynchron.withCallback;
 
@@ -106,14 +109,14 @@ public class TbSqsNode implements TbNode {
     }
 
     private TbMsg publishMessage(TbContext ctx, TbMsg msg) {
-        String queueUrl = TbNodeUtils.processPattern(this.config.getQueueUrlPattern(), msg.getMetaData());
+        String queueUrl = TbNodeUtils.processPattern(this.config.getQueueUrlPattern(), msg);
         SendMessageRequest sendMsgRequest =  new SendMessageRequest();
         sendMsgRequest.withQueueUrl(queueUrl);
         sendMsgRequest.withMessageBody(msg.getData());
         Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
         this.config.getMessageAttributes().forEach((k,v) -> {
-            String name = TbNodeUtils.processPattern(k, msg.getMetaData());
-            String val = TbNodeUtils.processPattern(v, msg.getMetaData());
+            String name = TbNodeUtils.processPattern(k, msg);
+            String val = TbNodeUtils.processPattern(v, msg);
             messageAttributes.put(name, new MessageAttributeValue().withDataType("String").withStringValue(val));
         });
         sendMsgRequest.setMessageAttributes(messageAttributes);

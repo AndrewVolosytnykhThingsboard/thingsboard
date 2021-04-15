@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -42,7 +42,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 import org.thingsboard.common.util.ListeningExecutor;
 import org.thingsboard.rule.engine.api.RuleEngineAlarmService;
@@ -69,7 +69,8 @@ import java.util.function.Consumer;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.eq;
@@ -264,6 +265,8 @@ public class TbAlarmNodeTest {
 
         node.onMsg(ctx, msg);
 
+        verify(ctx).enqueue(any(), successCaptor.capture(), failureCaptor.capture());
+        successCaptor.getValue().run();
         verify(ctx).tellNext(any(), eq("Updated"));
 
         ArgumentCaptor<TbMsg> msgCaptor = ArgumentCaptor.forClass(TbMsg.class);
@@ -306,13 +309,15 @@ public class TbAlarmNodeTest {
 
         when(detailsJs.executeJsonAsync(msg)).thenReturn(Futures.immediateFuture(null));
         when(alarmService.findLatestByOriginatorAndType(tenantId, originator, "SomeType")).thenReturn(Futures.immediateFuture(activeAlarm));
-        when(alarmService.clearAlarm(eq(activeAlarm.getTenantId()), eq(activeAlarm.getId()), org.mockito.Mockito.any(JsonNode.class), anyLong()))
+        when(alarmService.clearAlarm(eq(activeAlarm.getTenantId()), eq(activeAlarm.getId()), nullable(JsonNode.class), anyLong()))
                 .thenReturn(Futures.immediateFuture( false));
         when(alarmService.findAlarmByIdAsync(eq(activeAlarm.getTenantId()), eq(activeAlarm.getId()))).thenReturn(Futures.immediateFuture(activeAlarm));
 //        doAnswer((Answer<Alarm>) invocationOnMock -> (Alarm) (invocationOnMock.getArguments())[0]).when(alarmService).createOrUpdateAlarm(activeAlarm);
 
         node.onMsg(ctx, msg);
 
+        verify(ctx).enqueue(any(), successCaptor.capture(), failureCaptor.capture());
+        successCaptor.getValue().run();
         verify(ctx).tellNext(any(), eq("Cleared"));
 
         ArgumentCaptor<TbMsg> msgCaptor = ArgumentCaptor.forClass(TbMsg.class);
@@ -356,11 +361,13 @@ public class TbAlarmNodeTest {
 
         when(detailsJs.executeJsonAsync(msg)).thenReturn(Futures.immediateFuture(null));
         when(alarmService.findAlarmByIdAsync(tenantId, id)).thenReturn(Futures.immediateFuture(activeAlarm));
-        when(alarmService.clearAlarm(eq(activeAlarm.getTenantId()), eq(activeAlarm.getId()), org.mockito.Mockito.any(JsonNode.class), anyLong())).thenReturn(Futures.immediateFuture(true));
+        when(alarmService.clearAlarm(eq(activeAlarm.getTenantId()), eq(activeAlarm.getId()), nullable(JsonNode.class), anyLong())).thenReturn(Futures.immediateFuture(true));
 //        doAnswer((Answer<Alarm>) invocationOnMock -> (Alarm) (invocationOnMock.getArguments())[0]).when(alarmService).createOrUpdateAlarm(activeAlarm);
 
         node.onMsg(ctx, msg);
 
+        verify(ctx).enqueue(any(), successCaptor.capture(), failureCaptor.capture());
+        successCaptor.getValue().run();
         verify(ctx).tellNext(any(), eq("Cleared"));
 
         ArgumentCaptor<TbMsg> msgCaptor = ArgumentCaptor.forClass(TbMsg.class);

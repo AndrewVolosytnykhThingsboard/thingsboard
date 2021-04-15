@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -34,20 +34,31 @@ package org.thingsboard.server.dao.scheduler;
 import com.google.common.util.concurrent.ListenableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.thingsboard.server.common.data.Customer;
+import org.thingsboard.server.common.data.Edge;
+import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.id.CustomerId;
+import org.thingsboard.server.common.data.id.EdgeId;
 import org.thingsboard.server.common.data.id.SchedulerEventId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.page.TimePageLink;
+import org.thingsboard.server.common.data.relation.EntityRelation;
+import org.thingsboard.server.common.data.relation.RelationTypeGroup;
 import org.thingsboard.server.common.data.scheduler.SchedulerEvent;
 import org.thingsboard.server.common.data.scheduler.SchedulerEventInfo;
 import org.thingsboard.server.common.data.scheduler.SchedulerEventWithCustomerInfo;
+import org.thingsboard.server.common.data.tenant.profile.DefaultTenantProfileConfiguration;
 import org.thingsboard.server.dao.customer.CustomerDao;
+import org.thingsboard.server.dao.edge.EdgeService;
 import org.thingsboard.server.dao.entity.AbstractEntityService;
 import org.thingsboard.server.dao.exception.DataValidationException;
 import org.thingsboard.server.dao.service.DataValidator;
+import org.thingsboard.server.dao.service.Validator;
+import org.thingsboard.server.dao.tenant.TbTenantProfileCache;
 import org.thingsboard.server.dao.tenant.TenantDao;
 
 import java.util.List;
@@ -67,6 +78,10 @@ public class BaseSchedulerEventService extends AbstractEntityService implements 
     public static final String INCORRECT_SCHEDULER_EVENT_ID = "Incorrect schedulerEventId ";
 
     @Autowired
+    @Lazy
+    private TbTenantProfileCache tenantProfileCache;
+
+    @Autowired
     private SchedulerEventDao schedulerEventDao;
 
     @Autowired
@@ -77,6 +92,9 @@ public class BaseSchedulerEventService extends AbstractEntityService implements 
 
     @Autowired
     private CustomerDao customerDao;
+
+    @Autowired
+    private EdgeService edgeService;
 
     @Override
     public SchedulerEvent findSchedulerEventById(TenantId tenantId, SchedulerEventId schedulerEventId) {
@@ -189,8 +207,64 @@ public class BaseSchedulerEventService extends AbstractEntityService implements 
         }
     }
 
+    @Override
+    public SchedulerEventInfo assignSchedulerEventToEdge(TenantId tenantId, SchedulerEventId schedulerEventId, EdgeId edgeId) {
+        SchedulerEventInfo schedulerEventInfo = findSchedulerEventInfoById(tenantId, schedulerEventId);
+        Edge edge = edgeService.findEdgeById(tenantId, edgeId);
+        if (edge == null) {
+            throw new DataValidationException("Can't assign scheduler event to non-existent edge!");
+        }
+        try {
+            createRelation(tenantId, new EntityRelation(edgeId, schedulerEventId, EntityRelation.CONTAINS_TYPE, RelationTypeGroup.EDGE));
+        } catch (Exception e) {
+            log.warn("[{}] Failed to create scheduler event relation. Edge Id: [{}]", schedulerEventId, edgeId);
+            throw new RuntimeException(e);
+        }
+        return schedulerEventInfo;
+    }
+
+    @Override
+    public SchedulerEventInfo unassignSchedulerEventFromEdge(TenantId tenantId, SchedulerEventId schedulerEventId, EdgeId edgeId) {
+        SchedulerEventInfo schedulerEventInfo = findSchedulerEventInfoById(tenantId, schedulerEventId);
+        Edge edge = edgeService.findEdgeById(tenantId, edgeId);
+        if (edge == null) {
+            throw new DataValidationException("Can't unassign scheduler event from non-existent edge group!");
+        }
+        try {
+            deleteRelation(tenantId, new EntityRelation(edgeId, schedulerEventId, EntityRelation.CONTAINS_TYPE, RelationTypeGroup.EDGE));
+        } catch (Exception e) {
+            log.warn("[{}] Failed to delete scheduler event relation. Edge group id: [{}]", schedulerEventId, edgeId);
+            throw new RuntimeException(e);
+        }
+        return schedulerEventInfo;
+    }
+
+    @Override
+    public ListenableFuture<List<SchedulerEventInfo>> findSchedulerEventInfosByTenantIdAndEdgeId(TenantId tenantId, EdgeId edgeId) {
+        log.trace("Executing findSchedulerEventInfosByTenantIdAndEdgeId, tenantId [{}], edgeId [{}]", tenantId, edgeId);
+        Validator.validateId(tenantId, "Incorrect tenantId " + tenantId);
+        Validator.validateId(edgeId, "Incorrect edgeId " + edgeId);
+        return schedulerEventInfoDao.findSchedulerEventInfosByTenantIdAndEdgeId(tenantId.getId(), edgeId.getId(), new TimePageLink(Integer.MAX_VALUE));
+    }
+
+    @Override
+    public ListenableFuture<List<SchedulerEvent>> findSchedulerEventsByTenantIdAndEdgeId(TenantId tenantId, EdgeId edgeId) {
+        log.trace("Executing findSchedulerEventsByTenantIdAndEdgeId, tenantId [{}], edgeId [{}]", tenantId, edgeId);
+        Validator.validateId(tenantId, "Incorrect tenantId " + tenantId);
+        Validator.validateId(edgeId, "Incorrect edgeId " + edgeId);
+        return schedulerEventDao.findSchedulerEventsByTenantIdAndEdgeId(tenantId.getId(), edgeId.getId(), new TimePageLink(Integer.MAX_VALUE));
+    }
+
     private DataValidator<SchedulerEvent> schedulerEventValidator =
             new DataValidator<SchedulerEvent>() {
+
+                @Override
+                protected void validateCreate(TenantId tenantId, SchedulerEvent data) {
+                    DefaultTenantProfileConfiguration profileConfiguration =
+                            (DefaultTenantProfileConfiguration) tenantProfileCache.get(tenantId).getProfileData().getConfiguration();
+                    long maxSchedulerEvents = profileConfiguration.getMaxSchedulerEvents();
+                    validateNumberOfEntitiesPerTenant(tenantId, schedulerEventDao, maxSchedulerEvents, EntityType.SCHEDULER_EVENT);
+                }
 
                 @Override
                 protected void validateDataImpl(TenantId tenantId, SchedulerEvent schedulerEvent) {

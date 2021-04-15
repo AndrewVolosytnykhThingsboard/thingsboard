@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -54,6 +54,7 @@ export * from './material.models';
 export * from './oauth2.models';
 export * from './queue.models';
 export * from './relation.models';
+export * from './resource.models';
 export * from './rule-chain.models';
 export * from './rule-node.models';
 export * from './settings.models';
@@ -62,3 +63,4 @@ export * from './user.model';
 export * from './widget.models';
 export * from './widgets-bundle.model';
 export * from './window-message.model';
+export * from './entity-group.models';

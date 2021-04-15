@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -49,13 +49,19 @@ import { EntityGroupService } from '@core/http/entity-group.service';
 import { RoleService } from '@core/http/role.service';
 import { AlarmService } from '@core/http/alarm.service';
 import { Router } from '@angular/router';
+import { BroadcastService } from '@core/services/broadcast.service';
+import { ImportExportService } from '@home/components/import-export/import-export.service';
+import { EdgeService } from '@core/http/edge.service';
+import {SchedulerEventService} from '@core/http/scheduler-event.service'
 
 export const ServicesMap = new Map<string, Type<any>>(
   [
+   ['broadcastService', BroadcastService],
    ['deviceService', DeviceService],
    ['alarmService', AlarmService],
    ['assetService', AssetService],
    ['entityViewService', EntityViewService],
+   ['edgeService', EdgeService],
    ['customerService', CustomerService],
    ['dashboardService', DashboardService],
    ['userService', UserService],
@@ -70,6 +76,8 @@ export const ServicesMap = new Map<string, Type<any>>(
    ['utils', UtilsService],
    ['translate', TranslateService],
    ['http', HttpClient],
-   ['router', Router]
+   ['router', Router],
+   ['importExport', ImportExportService],
+   ['schedulerEventService', SchedulerEventService]
   ]
 );

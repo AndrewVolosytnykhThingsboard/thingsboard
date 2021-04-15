@@ -2,7 +2,7 @@
 
     ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 
-    Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+    Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 
     NOTICE: All information contained herein is, and remains
     the property of ThingsBoard, Inc. and its suppliers,
@@ -60,6 +60,10 @@
               labelText="device-profile.default-rule-chain"
               formControlName="defaultRuleChainId">
             </tb-rule-chain-autocomplete>
+            <tb-queue-type-list
+              [queueType]="serviceType"
+              formControlName="defaultQueueName">
+            </tb-queue-type-list>
             <mat-form-field fxHide class="mat-block">
               <mat-label translate>device-profile.type</mat-label>
               <mat-select formControlName="type" required>
@@ -107,7 +111,8 @@
             {count: alarmRulesFormGroup.get('alarms').value ?
                 alarmRulesFormGroup.get('alarms').value.length : 0} }}</ng-template>
           <tb-device-profile-alarms
-            formControlName="alarms">
+            formControlName="alarms"
+            [deviceProfileId]="null">
           </tb-device-profile-alarms>
         </form>
       </mat-step>

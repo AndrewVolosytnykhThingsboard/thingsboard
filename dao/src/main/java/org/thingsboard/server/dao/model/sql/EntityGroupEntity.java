@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -91,11 +91,11 @@ public class EntityGroupEntity extends BaseSqlEntity<EntityGroup> implements Bas
     @Column(name = ENTITY_GROUP_CONFIGURATION_PROPERTY)
     private JsonNode configuration;
 
-    public EntityGroupEntity () {
+    public EntityGroupEntity() {
         super();
     }
 
-    public EntityGroupEntity (EntityGroup entityGroup) {
+    public EntityGroupEntity(EntityGroup entityGroup) {
         if (entityGroup.getId() != null) {
             this.setUuid(entityGroup.getId().getId());
         }

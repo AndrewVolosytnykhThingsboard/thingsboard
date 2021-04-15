@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -38,7 +38,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.thingsboard.server.common.data.EntityInfo;
 import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.TenantProfile;
-import org.thingsboard.server.common.data.TenantProfileData;
+import org.thingsboard.server.common.data.tenant.profile.DefaultTenantProfileConfiguration;
+import org.thingsboard.server.common.data.tenant.profile.TenantProfileData;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.page.PageData;
 import org.thingsboard.server.common.data.page.PageLink;
@@ -300,7 +301,9 @@ public abstract class BaseTenantProfileControllerTest extends AbstractController
         TenantProfile tenantProfile = new TenantProfile();
         tenantProfile.setName(name);
         tenantProfile.setDescription(name + " Test");
-        tenantProfile.setProfileData(new TenantProfileData());
+        TenantProfileData tenantProfileData = new TenantProfileData();
+        tenantProfileData.setConfiguration(new DefaultTenantProfileConfiguration());
+        tenantProfile.setProfileData(tenantProfileData);
         tenantProfile.setDefault(false);
         tenantProfile.setIsolatedTbCore(false);
         tenantProfile.setIsolatedTbRuleEngine(false);

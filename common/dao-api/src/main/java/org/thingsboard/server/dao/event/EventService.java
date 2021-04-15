@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -32,6 +32,7 @@ package org.thingsboard.server.dao.event;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import org.thingsboard.server.common.data.Event;
+import org.thingsboard.server.common.data.event.EventFilter;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.page.PageData;
@@ -55,6 +56,8 @@ public interface EventService {
     PageData<Event> findEvents(TenantId tenantId, EntityId entityId, String eventType, TimePageLink pageLink);
 
     List<Event> findLatestEvents(TenantId tenantId, EntityId entityId, String eventType, int limit);
+
+    PageData<Event> findEventsByFilter(TenantId tenantId, EntityId entityId, EventFilter eventFilter, TimePageLink pageLink);
 
     void removeEvents(TenantId tenantId, EntityId entityId);
 

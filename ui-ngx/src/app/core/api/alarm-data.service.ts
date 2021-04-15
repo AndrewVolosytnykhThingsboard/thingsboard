@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -47,6 +47,7 @@ export interface AlarmDataListener {
   alarmSource: Datasource;
   alarmsLoaded: (pageData: PageData<AlarmData>, allowedEntities: number, totalEntities: number) => void;
   alarmsUpdated: (update: Array<AlarmData>, pageData: PageData<AlarmData>) => void;
+  alarmDataSubscriptionOptions?: AlarmDataSubscriptionOptions;
   subscription?: AlarmDataSubscription;
 }
 
@@ -62,11 +63,11 @@ export class AlarmDataService {
                             pageLink: AlarmDataPageLink,
                             keyFilters: KeyFilter[]) {
     const alarmSource = listener.alarmSource;
+    listener.alarmDataSubscriptionOptions = this.createAlarmSubscriptionOptions(listener, pageLink, keyFilters);
     if (alarmSource.type === DatasourceType.entity && (!alarmSource.entityFilter || !pageLink)) {
       return;
     }
-    listener.subscription = this.createSubscription(listener,
-      pageLink, alarmSource.keyFilters,  keyFilters);
+    listener.subscription = new AlarmDataSubscription(listener, this.telemetryService);
     return listener.subscription.subscribe();
   }
 
@@ -76,10 +77,9 @@ export class AlarmDataService {
     }
   }
 
-  private createSubscription(listener: AlarmDataListener,
-                             pageLink: AlarmDataPageLink,
-                             keyFilters: KeyFilter[],
-                             additionalKeyFilters: KeyFilter[]): AlarmDataSubscription {
+  private createAlarmSubscriptionOptions(listener: AlarmDataListener,
+                                         pageLink: AlarmDataPageLink,
+                                         additionalKeyFilters: KeyFilter[]): AlarmDataSubscriptionOptions {
     const alarmSource = listener.alarmSource;
     const alarmSubscriptionDataKeys: Array<AlarmSubscriptionDataKey> = [];
     alarmSource.dataKeys.forEach((dataKey) => {
@@ -97,11 +97,10 @@ export class AlarmDataService {
     if (alarmDataSubscriptionOptions.datasourceType === DatasourceType.entity) {
       alarmDataSubscriptionOptions.entityFilter = alarmSource.entityFilter;
       alarmDataSubscriptionOptions.pageLink = pageLink;
-      alarmDataSubscriptionOptions.keyFilters = keyFilters;
+      alarmDataSubscriptionOptions.keyFilters = alarmSource.keyFilters;
       alarmDataSubscriptionOptions.additionalKeyFilters = additionalKeyFilters;
     }
-    return new AlarmDataSubscription(alarmDataSubscriptionOptions,
-      listener, this.telemetryService);
+    return alarmDataSubscriptionOptions;
   }
 
 }

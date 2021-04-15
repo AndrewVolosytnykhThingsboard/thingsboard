@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -48,6 +48,7 @@ import org.thingsboard.server.common.msg.queue.TbCallback;
 import org.thingsboard.server.common.msg.queue.TbMsgCallback;
 import org.thingsboard.server.common.stats.StatsFactory;
 import org.thingsboard.server.common.transport.util.DataDecodingEncodingService;
+import org.thingsboard.server.dao.tenant.TbTenantProfileCache;
 import org.thingsboard.server.gen.transport.TransportProtos;
 import org.thingsboard.server.gen.transport.TransportProtos.ToRuleEngineMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToRuleEngineNotificationMsg;
@@ -58,6 +59,7 @@ import org.thingsboard.server.queue.provider.TbRuleEngineQueueFactory;
 import org.thingsboard.server.queue.settings.TbQueueRuleEngineSettings;
 import org.thingsboard.server.queue.settings.TbRuleEngineQueueConfiguration;
 import org.thingsboard.server.queue.util.TbRuleEngineComponent;
+import org.thingsboard.server.service.apiusage.TbApiUsageStateService;
 import org.thingsboard.server.service.profile.TbDeviceProfileCache;
 import org.thingsboard.server.service.queue.processing.AbstractConsumerService;
 import org.thingsboard.server.service.queue.processing.TbRuleEngineProcessingDecision;
@@ -113,11 +115,16 @@ public class DefaultTbRuleEngineConsumerService extends AbstractConsumerService<
     public DefaultTbRuleEngineConsumerService(TbRuleEngineProcessingStrategyFactory processingStrategyFactory,
                                               TbRuleEngineSubmitStrategyFactory submitStrategyFactory,
                                               TbQueueRuleEngineSettings ruleEngineSettings,
-                                              TbRuleEngineQueueFactory tbRuleEngineQueueFactory, RuleEngineStatisticsService statisticsService,
-                                              ActorSystemContext actorContext, DataDecodingEncodingService encodingService,
+                                              TbRuleEngineQueueFactory tbRuleEngineQueueFactory,
+                                              RuleEngineStatisticsService statisticsService,
+                                              ActorSystemContext actorContext,
+                                              DataDecodingEncodingService encodingService,
                                               TbRuleEngineDeviceRpcService tbDeviceRpcService,
-                                              StatsFactory statsFactory, TbDeviceProfileCache deviceProfileCache) {
-        super(actorContext, encodingService, deviceProfileCache, tbRuleEngineQueueFactory.createToRuleEngineNotificationsMsgConsumer());
+                                              StatsFactory statsFactory,
+                                              TbDeviceProfileCache deviceProfileCache,
+                                              TbTenantProfileCache tenantProfileCache,
+                                              TbApiUsageStateService apiUsageStateService) {
+        super(actorContext, encodingService, tenantProfileCache, deviceProfileCache, apiUsageStateService, tbRuleEngineQueueFactory.createToRuleEngineNotificationsMsgConsumer());
         this.statisticsService = statisticsService;
         this.ruleEngineSettings = ruleEngineSettings;
         this.tbRuleEngineQueueFactory = tbRuleEngineQueueFactory;
@@ -148,11 +155,11 @@ public class DefaultTbRuleEngineConsumerService extends AbstractConsumerService<
     }
 
     @Override
-    public void onApplicationEvent(PartitionChangeEvent partitionChangeEvent) {
-        if (partitionChangeEvent.getServiceType().equals(getServiceType())) {
-            ServiceQueue serviceQueue = partitionChangeEvent.getServiceQueueKey().getServiceQueue();
-            log.info("[{}] Subscribing to partitions: {}", serviceQueue.getQueue(), partitionChangeEvent.getPartitions());
-            consumers.get(serviceQueue.getQueue()).subscribe(partitionChangeEvent.getPartitions());
+    protected void onTbApplicationEvent(PartitionChangeEvent event) {
+        if (event.getServiceType().equals(getServiceType())) {
+            ServiceQueue serviceQueue = event.getServiceQueueKey().getServiceQueue();
+            log.info("[{}] Subscribing to partitions: {}", serviceQueue.getQueue(), event.getPartitions());
+            consumers.get(serviceQueue.getQueue()).subscribe(event.getPartitions());
         }
     }
 
@@ -189,7 +196,7 @@ public class DefaultTbRuleEngineConsumerService extends AbstractConsumerService<
                                     new TbMsgPackCallback(id, tenantId, ctx, stats.getTimer(tenantId, SUCCESSFUL_STATUS), stats.getTimer(tenantId, FAILED_STATUS)) :
                                     new TbMsgPackCallback(id, tenantId, ctx);
                             try {
-                                if (toRuleEngineMsg.getTbMsg() != null && !toRuleEngineMsg.getTbMsg().isEmpty()) {
+                                if (!toRuleEngineMsg.getTbMsg().isEmpty()) {
                                     forwardToRuleEngineActor(configuration.getName(), tenantId, toRuleEngineMsg, callback);
                                 } else {
                                     callback.onSuccess();
@@ -217,6 +224,9 @@ public class DefaultTbRuleEngineConsumerService extends AbstractConsumerService<
                         if (statsEnabled) {
                             stats.log(result, decision.isCommit());
                         }
+
+                        ctx.cleanup();
+
                         if (decision.isCommit()) {
                             submitStrategy.stop();
                             break;

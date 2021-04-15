@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -83,6 +83,21 @@ export class SchedulerEventService {
 
   public deleteSchedulerEvent(schedulerEventId: string, config?: RequestConfig) {
     return this.http.delete(`/api/schedulerEvent/${schedulerEventId}`, defaultHttpOptionsFromConfig(config));
+  }
+
+  public getEdgeSchedulerEvents(edgeId: string, config?: RequestConfig): Observable<Array<SchedulerEventWithCustomerInfo>> {
+    return this.http.get<Array<SchedulerEventWithCustomerInfo>>(`/api/edge/${edgeId}/schedulerEvents`,
+      defaultHttpOptionsFromConfig(config));
+  }
+
+  public assignSchedulerEventToEdge(edgeId: string, schedulerEventId: string, config?: RequestConfig): Observable<SchedulerEventInfo> {
+    return this.http.post<SchedulerEventInfo>(`/api/edge/${edgeId}/schedulerEvent/${schedulerEventId}`,
+      defaultHttpOptionsFromConfig(config));
+  }
+
+  public unassignSchedulerEventFromEdge(edgeId: string, schedulerEventId: string, config?: RequestConfig) {
+    return this.http.delete(`/api/edge/${edgeId}/schedulerEvent/${schedulerEventId}`,
+      defaultHttpOptionsFromConfig(config));
   }
 
 }

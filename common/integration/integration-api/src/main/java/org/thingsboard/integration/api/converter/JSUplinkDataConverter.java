@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -50,7 +50,7 @@ public class JSUplinkDataConverter extends AbstractUplinkDataConverter {
     public void init(Converter configuration) {
         super.init(configuration);
         String decoder = configuration.getConfiguration().get("decoder").asText();
-        this.evaluator = new JSUplinkEvaluator(jsInvokeService,  configuration.getId(), decoder);
+        this.evaluator = new JSUplinkEvaluator(configuration.getTenantId(), jsInvokeService,  configuration.getId(), decoder);
     }
 
     @Override

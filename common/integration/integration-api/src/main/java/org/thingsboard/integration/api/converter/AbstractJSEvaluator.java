@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.thingsboard.js.api.JsInvokeService;
 import org.thingsboard.js.api.JsScriptType;
 import org.thingsboard.server.common.data.id.EntityId;
+import org.thingsboard.server.common.data.id.TenantId;
 
 import java.util.UUID;
 
@@ -43,16 +44,18 @@ public abstract class AbstractJSEvaluator {
     protected final JsInvokeService jsInvokeService;
     private final JsScriptType scriptType;
     private final String script;
+    protected final TenantId tenantId;
     protected final EntityId entityId;
 
     protected volatile UUID scriptId;
     private volatile boolean isErrorScript = false;
 
 
-    public AbstractJSEvaluator(JsInvokeService jsInvokeService, EntityId entityId, JsScriptType scriptType, String script) {
+    public AbstractJSEvaluator(TenantId tenantId, JsInvokeService jsInvokeService, EntityId entityId, JsScriptType scriptType, String script) {
         this.jsInvokeService = jsInvokeService;
         this.scriptType = scriptType;
         this.script = script;
+        this.tenantId = tenantId;
         this.entityId = entityId;
     }
 
@@ -74,7 +77,7 @@ public abstract class AbstractJSEvaluator {
         synchronized (this) {
             if (this.scriptId == null) {
                 try {
-                    this.scriptId = this.jsInvokeService.eval(scriptType, script).get();
+                    this.scriptId = this.jsInvokeService.eval(tenantId, scriptType, script).get();
                 } catch (Exception e) {
                     isErrorScript = true;
                     throw new IllegalArgumentException("Can't compile script: " + e.getMessage(), e);

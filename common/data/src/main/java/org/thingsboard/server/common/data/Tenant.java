@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -35,13 +35,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.id.TenantProfileId;
+import org.thingsboard.server.common.data.validation.NoXss;
 
 @EqualsAndHashCode(callSuper = true)
 public class Tenant extends ContactBased<TenantId> implements TenantEntity {
 
     private static final long serialVersionUID = 8057243243859922101L;
-    
+
+    @NoXss
     private String title;
+    @NoXss
     private String region;
     private TenantProfileId tenantProfileId;
 

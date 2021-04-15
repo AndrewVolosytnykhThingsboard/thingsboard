@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -36,7 +36,10 @@ import {
   FormArray,
   FormBuilder,
   FormGroup,
+  NG_VALIDATORS,
   NG_VALUE_ACCESSOR,
+  ValidationErrors,
+  Validator,
   Validators
 } from '@angular/forms';
 import { Observable, of, Subscription } from 'rxjs';
@@ -64,10 +67,15 @@ import { map } from 'rxjs/operators';
       provide: NG_VALUE_ACCESSOR,
       useExisting: forwardRef(() => FilterPredicateListComponent),
       multi: true
+    },
+    {
+      provide: NG_VALIDATORS,
+      useExisting: forwardRef(() => FilterPredicateListComponent),
+      multi: true
     }
   ]
 })
-export class FilterPredicateListComponent implements ControlValueAccessor, OnInit {
+export class FilterPredicateListComponent implements ControlValueAccessor, Validator, OnInit {
 
   @Input() disabled: boolean;
 
@@ -80,6 +88,8 @@ export class FilterPredicateListComponent implements ControlValueAccessor, OnIni
   @Input() displayUserParameters = true;
 
   @Input() allowUserDynamicSource = true;
+
+  @Input() onlyUserDynamicSource = false;
 
   filterListFormGroup: FormGroup;
 
@@ -119,6 +129,12 @@ export class FilterPredicateListComponent implements ControlValueAccessor, OnIni
     } else {
       this.filterListFormGroup.enable({emitEvent: false});
     }
+  }
+
+  validate(control: AbstractControl): ValidationErrors | null {
+    return this.filterListFormGroup.valid ? null : {
+      filterList: {valid: false}
+    };
   }
 
   writeValue(predicates: Array<KeyFilterPredicateInfo>): void {
@@ -174,7 +190,8 @@ export class FilterPredicateListComponent implements ControlValueAccessor, OnIni
         key: this.key,
         isAdd: true,
         displayUserParameters: this.displayUserParameters,
-        allowUserDynamicSource: this.allowUserDynamicSource
+        allowUserDynamicSource: this.allowUserDynamicSource,
+        onlyUserDynamicSource: this.onlyUserDynamicSource
       }
     }).afterClosed().pipe(
       map((result) => {
@@ -190,7 +207,7 @@ export class FilterPredicateListComponent implements ControlValueAccessor, OnIni
 
   private updateModel() {
     const predicates: Array<KeyFilterPredicateInfo> = this.filterListFormGroup.getRawValue().predicates;
-    if (this.filterListFormGroup.valid && predicates.length) {
+    if (predicates.length) {
       this.propagateChange(predicates);
     } else {
       this.propagateChange(null);

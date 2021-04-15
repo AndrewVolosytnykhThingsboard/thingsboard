@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -47,7 +47,7 @@ import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.dao.model.BaseSqlEntity;
 import org.thingsboard.server.dao.model.ModelConstants;
 import org.thingsboard.server.dao.model.SearchTextEntity;
-import org.thingsboard.server.dao.util.mapping.JacksonUtil;
+import org.thingsboard.common.util.JacksonUtil;
 import org.thingsboard.server.dao.util.mapping.JsonBinaryType;
 
 import javax.persistence.Column;
@@ -94,6 +94,9 @@ public final class DeviceProfileEntity extends BaseSqlEntity<DeviceProfile> impl
     @Column(name = ModelConstants.DEVICE_PROFILE_DEFAULT_RULE_CHAIN_ID_PROPERTY, columnDefinition = "uuid")
     private UUID defaultRuleChainId;
 
+    @Column(name = ModelConstants.DEVICE_PROFILE_DEFAULT_QUEUE_NAME_PROPERTY)
+    private String defaultQueueName;
+
     @Type(type = "jsonb")
     @Column(name = ModelConstants.DEVICE_PROFILE_PROFILE_DATA_PROPERTY, columnDefinition = "jsonb")
     private JsonNode profileData;
@@ -123,6 +126,7 @@ public final class DeviceProfileEntity extends BaseSqlEntity<DeviceProfile> impl
         if (deviceProfile.getDefaultRuleChainId() != null) {
             this.defaultRuleChainId = deviceProfile.getDefaultRuleChainId().getId();
         }
+        this.defaultQueueName = deviceProfile.getDefaultQueueName();
         this.provisionDeviceKey = deviceProfile.getProvisionDeviceKey();
     }
 
@@ -157,6 +161,7 @@ public final class DeviceProfileEntity extends BaseSqlEntity<DeviceProfile> impl
         if (defaultRuleChainId != null) {
             deviceProfile.setDefaultRuleChainId(new RuleChainId(defaultRuleChainId));
         }
+        deviceProfile.setDefaultQueueName(defaultQueueName);
         deviceProfile.setProvisionDeviceKey(provisionDeviceKey);
         return deviceProfile;
     }

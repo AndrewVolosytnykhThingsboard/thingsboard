@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -50,7 +50,9 @@ import {
   schedulerTimeUnitTranslationMap
 } from '@shared/models/scheduler-event.models';
 import * as _moment from 'moment';
+import * as momentTz from 'moment-timezone';
 import { isDefined } from '@core/utils';
+import { ErrorStateMatcher } from '@angular/material/core';
 
 interface SchedulerEventScheduleConfig {
   timezone: string;
@@ -62,6 +64,15 @@ interface SchedulerEventScheduleConfig {
   timerRepeat?: {
     repeatInterval?: number;
     timeUnit?: SchedulerTimeUnit;
+  };
+}
+
+export class endsOnDateErrorStateMatcher implements ErrorStateMatcher {
+  isErrorState(control: FormControl | null,): boolean {
+    const invalidCtrl = !!(control?.invalid);
+    const invalidParent = !!(control?.parent && control?.parent.invalid);
+
+    return (invalidCtrl || invalidParent);
   }
 }
 
@@ -79,6 +90,8 @@ export class SchedulerEventScheduleComponent extends PageComponent implements Co
 
   modelValue: SchedulerEventScheduleConfig | null;
 
+  endsOnDateMatcher = new endsOnDateErrorStateMatcher();
+
   scheduleConfigFormGroup: FormGroup;
 
   schedulerRepeatTypes = Object.keys(SchedulerRepeatType);
@@ -94,11 +107,10 @@ export class SchedulerEventScheduleComponent extends PageComponent implements Co
   @Input()
   disabled: boolean;
 
-  defaultTimezone = _moment.tz.guess();
-
   private lastAppliedTimezone: string;
 
-  private propagateChange = (v: any) => { };
+  private propagateChange = (v: any) => {
+  };
 
   constructor(protected store: Store<AppState>,
               private fb: FormBuilder) {
@@ -116,7 +128,10 @@ export class SchedulerEventScheduleComponent extends PageComponent implements Co
           timeUnit: [null, [Validators.required]]
         }
       )
-    });
+    }, {validator: this.endsOnDateValidator('startDate', 'endsOnDate')});
+
+
+
 
     this.scheduleConfigFormGroup.get('timezone').valueChanges.subscribe((timezone: string) => {
       if (timezone !== this.lastAppliedTimezone && timezone) {
@@ -164,6 +179,17 @@ export class SchedulerEventScheduleComponent extends PageComponent implements Co
     this.scheduleConfigFormGroup.valueChanges.subscribe(() => {
       this.updateModel();
     });
+  }
+
+  private endsOnDateValidator(startDate:string, endsOnDate:string) {
+    return (group: FormGroup): {[key: string]: any} => {
+      if(group.controls[endsOnDate].status === 'VALID') {
+        if (group.controls[startDate].value.getTime() > group.controls[endsOnDate].value.getTime()) {
+          return {'endsOnDateValidator': true};
+        }
+      }
+      return null;
+    }
   }
 
   weeklyRepeatControl(index: number): FormControl {
@@ -224,7 +250,7 @@ export class SchedulerEventScheduleComponent extends PageComponent implements Co
       doUpdate = true;
     }
     this.lastAppliedTimezone = this.modelValue.timezone;
-    this.scheduleConfigFormGroup.reset(this.modelValue,{emitEvent: false});
+    this.scheduleConfigFormGroup.reset(this.modelValue, {emitEvent: false});
     this.updateEnabledState();
     if (doUpdate) {
       setTimeout(() => {
@@ -235,12 +261,12 @@ export class SchedulerEventScheduleComponent extends PageComponent implements Co
 
   private toSchedulerEventScheduleConfig(value: SchedulerEventSchedule): SchedulerEventScheduleConfig {
     if (value) {
-      const timezone = value.timezone || this.defaultTimezone;
+      const timezone = value.timezone || momentTz.tz.guess();
       const config: SchedulerEventScheduleConfig = {
         timezone,
         startDate: this.dateFromUtcTime(value.startTime, timezone)
       };
-      if (value.repeat && value.repeat !== null) {
+      if (value.repeat) {
         config.repeat = true;
         config.repeatType = value.repeat.type;
         if (value.repeat.type === SchedulerRepeatType.WEEKLY && value.repeat.repeatOn) {
@@ -293,7 +319,7 @@ export class SchedulerEventScheduleComponent extends PageComponent implements Co
 
   private createDefaultSchedulerEventScheduleConfig(): SchedulerEventScheduleConfig {
     const scheduleConfig: SchedulerEventScheduleConfig = {
-      timezone: this.defaultTimezone
+      timezone: momentTz.tz.guess()
     };
     const date = new Date();
     scheduleConfig.startDate = new Date(
@@ -331,8 +357,8 @@ export class SchedulerEventScheduleComponent extends PageComponent implements Co
   }
 
   private dateFromUtcTime(time: number, timezone: string): Date {
-    const offset = _moment.tz.zone(timezone).utcOffset(time) * 60 * 1000;
-    return new Date(time - offset + new Date().getTimezoneOffset() * 60 * 1000);
+    const offset = momentTz.tz.zone(timezone).utcOffset(time) * 60 * 1000;
+    return new Date(time - offset + new Date(time).getTimezoneOffset() * 60 * 1000);
   }
 
   private dateTimeToUtcTime(date: Date, timezone: string): number {
@@ -345,8 +371,8 @@ export class SchedulerEventScheduleComponent extends PageComponent implements Co
       date.getSeconds(),
       date.getMilliseconds()
     ).getTime();
-    const offset = _moment.tz.zone(timezone).utcOffset(ts) * 60 * 1000;
-    return ts + offset - new Date().getTimezoneOffset() * 60 * 1000;
+    const offset = momentTz.tz.zone(timezone).utcOffset(ts) * 60 * 1000;
+    return ts + offset - new Date(ts).getTimezoneOffset() * 60 * 1000;
   }
 
   private dateToUtcTime(date: Date, timezone: string): number {
@@ -355,8 +381,8 @@ export class SchedulerEventScheduleComponent extends PageComponent implements Co
       date.getMonth(),
       date.getDate()
     ).getTime();
-    const offset = _moment.tz.zone(timezone).utcOffset(ts) * 60 * 1000;
-    return ts + offset - new Date().getTimezoneOffset() * 60 * 1000;
+    const offset = momentTz.tz.zone(timezone).utcOffset(ts) * 60 * 1000;
+    return ts + offset - new Date(ts).getTimezoneOffset() * 60 * 1000;
   }
 
 }

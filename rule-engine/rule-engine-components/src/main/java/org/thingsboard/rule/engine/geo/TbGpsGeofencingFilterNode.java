@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -30,30 +30,12 @@
  */
 package org.thingsboard.rule.engine.geo;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import lombok.extern.slf4j.Slf4j;
-import org.locationtech.spatial4j.context.jts.JtsSpatialContext;
-import org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory;
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.ShapeFactory;
-import org.locationtech.spatial4j.shape.SpatialRelation;
-import org.springframework.util.StringUtils;
 import org.thingsboard.rule.engine.api.RuleNode;
 import org.thingsboard.rule.engine.api.TbContext;
-import org.thingsboard.rule.engine.api.TbNode;
-import org.thingsboard.rule.engine.api.TbNodeConfiguration;
 import org.thingsboard.rule.engine.api.TbNodeException;
-import org.thingsboard.rule.engine.api.util.TbNodeUtils;
-import org.thingsboard.rule.engine.filter.TbMsgTypeFilterNodeConfiguration;
 import org.thingsboard.server.common.data.plugin.ComponentType;
 import org.thingsboard.server.common.msg.TbMsg;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * Created by ashvayka on 19.01.18.

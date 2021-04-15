@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -42,6 +42,7 @@ import org.thingsboard.server.common.data.TenantEntity;
 import org.thingsboard.server.common.data.id.RuleChainId;
 import org.thingsboard.server.common.data.id.RuleNodeId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.validation.NoXss;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -51,11 +52,14 @@ public class RuleChain extends SearchTextBasedWithAdditionalInfo<RuleChainId> im
     private static final long serialVersionUID = -5656679015121935465L;
 
     private TenantId tenantId;
+    @NoXss
     private String name;
+    private RuleChainType type;
     private RuleNodeId firstRuleNodeId;
     private boolean root;
     private boolean debugMode;
     private transient JsonNode configuration;
+
     @JsonIgnore
     private byte[] configurationBytes;
 
@@ -71,6 +75,7 @@ public class RuleChain extends SearchTextBasedWithAdditionalInfo<RuleChainId> im
         super(ruleChain);
         this.tenantId = ruleChain.getTenantId();
         this.name = ruleChain.getName();
+        this.type = ruleChain.getType();
         this.firstRuleNodeId = ruleChain.getFirstRuleNodeId();
         this.root = ruleChain.isRoot();
         this.setConfiguration(ruleChain.getConfiguration());
@@ -99,6 +104,4 @@ public class RuleChain extends SearchTextBasedWithAdditionalInfo<RuleChainId> im
     public EntityType getEntityType() {
         return EntityType.RULE_CHAIN;
     }
-
-
 }

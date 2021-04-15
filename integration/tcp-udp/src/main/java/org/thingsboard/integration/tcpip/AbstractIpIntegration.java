@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -34,20 +34,31 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import lombok.Data;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Hex;
 import org.thingsboard.integration.api.AbstractIntegration;
 import org.thingsboard.integration.api.IntegrationContext;
 import org.thingsboard.integration.api.TbIntegrationInitParams;
+import org.thingsboard.integration.api.data.DownlinkData;
+import org.thingsboard.integration.api.data.IntegrationDownlinkMsg;
+import org.thingsboard.integration.api.data.IntegrationMetaData;
 import org.thingsboard.integration.api.data.UplinkData;
 import org.thingsboard.integration.api.data.UplinkMetaData;
+import org.thingsboard.server.common.msg.TbMsg;
 
+import java.net.SocketAddress;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +77,11 @@ public abstract class AbstractIpIntegration extends AbstractIntegration<IpIntegr
     public static final String JSON_PAYLOAD = "JSON";
     public static final String HEX_PAYLOAD = "HEX";
 
+    protected Map<String, List<DownlinkData>> devicesDownlinkData = new HashMap<>();
+    protected Map<String, ChannelHandlerContext> connectedDevicesContexts = new HashMap<>();
+
+    protected Cache<String, SocketAddress> deviceSenderAddress;
+
     protected IntegrationContext ctx;
     protected Channel serverChannel;
     protected EventLoopGroup bossGroup;
@@ -77,19 +93,112 @@ public abstract class AbstractIpIntegration extends AbstractIntegration<IpIntegr
     @Override
     public void init(TbIntegrationInitParams params) throws Exception {
         super.init(params);
+        if(downlinkConverter != null) {
+            initCache(params);
+        }
         this.ctx = params.getContext();
         if (serverChannel != null) {
             destroy();
         }
     }
 
+    private void initCache(TbIntegrationInitParams params) {
+        int timeToLiveInMinutes = 1440;
+        int cacheSize = 1000;
+
+
+        JsonNode timeToLiveInMinutesJson = params.getConfiguration().getConfiguration().get("clientConfiguration").get("timeToLiveInMinutes");
+        if (timeToLiveInMinutesJson != null) {
+            timeToLiveInMinutes = timeToLiveInMinutesJson.asInt();
+        }
+
+        JsonNode cacheSizeJson = params.getConfiguration().getConfiguration().get("clientConfiguration").get("cacheSize");
+        if (cacheSizeJson != null) {
+            cacheSize = cacheSizeJson.asInt();
+        }
+
+        deviceSenderAddress = Caffeine.newBuilder()
+                .expireAfterWrite(timeToLiveInMinutes, TimeUnit.MINUTES)
+                .maximumSize(cacheSize)
+                .build();
+    }
+
+    @Override
+    public void onDownlinkMsg(IntegrationDownlinkMsg downlink) {
+        TbMsg msg = downlink.getTbMsg();
+        logDownlink(context, msg.getType(), msg);
+        if (downlinkConverter != null) {
+            Map<String, String> mdMap = new HashMap<>(metadataTemplate.getKvMap());
+            String status;
+            Exception exception;
+            try {
+                String entityName = downlink.getEntityName();
+                if (entityName == null || entityName.length() == 0) {
+                    throw new RuntimeException("EntityName for downlink is empty.");
+                }
+                List<DownlinkData> result = downlinkConverter.convertDownLink(
+                        context.getDownlinkConverterContext(),
+                        Collections.singletonList(msg),
+                        new IntegrationMetaData(mdMap));
+
+                if (devicesDownlinkData.get(entityName) == null || devicesDownlinkData.get(entityName).isEmpty()) {
+                    devicesDownlinkData.put(entityName, new ArrayList<>());
+                }
+                for (DownlinkData downlinkData : result) {
+                    devicesDownlinkData.get(entityName).add(downlinkData);
+                }
+
+                downlinkWriter(entityName);
+            } catch (Exception e) {
+                log.warn("Failed to process downLink message", e);
+                exception = e;
+                status = "ERROR";
+                reportDownlinkError(context, msg, status, exception);
+            }
+        }
+    }
+
+    protected void downlinkWriter(String entityName) {
+        ChannelHandlerContext deviceCtx = connectedDevicesContexts.get(entityName);
+        if (deviceCtx == null) {
+            log.warn("Device context not found, downlink data will be send when uplink message will be arrived.");
+            return;
+        }
+        sendDownlink(deviceCtx, entityName);
+    }
+
+    protected abstract void sendDownlink(ChannelHandlerContext ctx, String entityName);
+
     @Override
     public void process(IpIntegrationMsg msg) {
+
+    }
+
+    private void process(IpIntegrationMsg msg, ChannelHandlerContext ctx) {
         String status = "OK";
         Exception exception = null;
         try {
             List<UplinkData> upLinkDataList = getUplinkDataList(context, msg);
+
             processUplinkData(context, upLinkDataList);
+
+            if (downlinkConverter != null) {
+                for (UplinkData uplinkData : upLinkDataList) {
+                    String entityName;
+                    if (uplinkData.isAsset()) {
+                        entityName = uplinkData.getAssetName();
+                    } else {
+                        entityName = uplinkData.getDeviceName();
+                    }
+                    connectedDevicesContexts.put(entityName, ctx);
+                    deviceSenderAddress.put(entityName, msg.getAddress());
+
+                    if (!devicesDownlinkData.isEmpty() && devicesDownlinkData.get(entityName) != null) {
+                        downlinkWriter(entityName);
+                    }
+                }
+            }
+
             integrationStatistics.incMessagesProcessed();
         } catch (Exception e) {
             log.debug("Failed to apply data converter function: {}", e.getMessage(), e);
@@ -202,7 +311,15 @@ public abstract class AbstractIpIntegration extends AbstractIntegration<IpIntegr
         }
     }
 
-    protected abstract class AbstractChannelHandler<T> extends SimpleChannelInboundHandler<T> {
+    @Data
+    protected class RawIpIntegrationMsg<T> {
+        @Getter
+        private final SocketAddress address;
+        @Getter
+        private final T data;
+    }
+
+    protected abstract class AbstractChannelHandler<T> extends SimpleChannelInboundHandler<RawIpIntegrationMsg<T>> {
 
         private Function<T, byte[]> transformer;
         private Predicate<T> predicate;
@@ -213,13 +330,14 @@ public abstract class AbstractIpIntegration extends AbstractIntegration<IpIntegr
         }
 
         @Override
-        public void channelRead0(ChannelHandlerContext ctx, T msg) throws Exception {
+        public void channelRead0(ChannelHandlerContext ctx, RawIpIntegrationMsg<T> msg) throws Exception {
             try {
-                if (predicate.test(msg)) {
+                if (predicate.test(msg.getData())) {
                     log.debug("Message is ignored, because it's not supported by current integration. Message [{}]", msg);
                     return;
                 }
-                process(new IpIntegrationMsg(transformer.apply(msg)));
+                IpIntegrationMsg message = new IpIntegrationMsg(msg.getAddress(), transformer.apply(msg.getData()));
+                process(message, ctx);
             } catch (Exception e) {
                 log.error("[{}] Exception happened during read messages from channel!", e.getMessage(), e);
                 throw new Exception(e);
@@ -237,6 +355,5 @@ public abstract class AbstractIpIntegration extends AbstractIntegration<IpIntegr
             log.error("Exception caught", cause);
         }
     }
-
 
 }

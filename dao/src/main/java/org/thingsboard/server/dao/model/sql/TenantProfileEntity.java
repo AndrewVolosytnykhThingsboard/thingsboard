@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -37,14 +37,13 @@ import lombok.EqualsAndHashCode;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 import org.thingsboard.server.common.data.TenantProfile;
-import org.thingsboard.server.common.data.TenantProfileData;
 import org.thingsboard.server.common.data.id.TenantProfileId;
+import org.thingsboard.server.common.data.tenant.profile.TenantProfileData;
 import org.thingsboard.server.dao.model.BaseSqlEntity;
 import org.thingsboard.server.dao.model.ModelConstants;
 import org.thingsboard.server.dao.model.SearchTextEntity;
-import org.thingsboard.server.dao.util.mapping.JacksonUtil;
+import org.thingsboard.common.util.JacksonUtil;
 import org.thingsboard.server.dao.util.mapping.JsonBinaryType;
-import org.thingsboard.server.dao.util.mapping.JsonStringType;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;

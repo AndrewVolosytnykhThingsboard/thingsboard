@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -37,20 +37,21 @@ import org.thingsboard.integration.api.data.UplinkMetaData;
 import org.thingsboard.js.api.JsInvokeService;
 import org.thingsboard.js.api.JsScriptType;
 import org.thingsboard.server.common.data.id.EntityId;
+import org.thingsboard.server.common.data.id.TenantId;
 
 @Slf4j
 public class JSUplinkEvaluator extends AbstractJSEvaluator {
 
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    public JSUplinkEvaluator(JsInvokeService jsInvokeService, EntityId entityId, String script) {
-        super(jsInvokeService, entityId, JsScriptType.UPLINK_CONVERTER_SCRIPT, script);
+    public JSUplinkEvaluator(TenantId tenantId, JsInvokeService jsInvokeService, EntityId entityId, String script) {
+        super(tenantId, jsInvokeService, entityId, JsScriptType.UPLINK_CONVERTER_SCRIPT, script);
     }
 
     public String execute(byte[] data, UplinkMetaData metadata) throws Exception {
         validateSuccessfulScriptLazyInit();
         String[] inArgs = prepareArgs(data, metadata);
-        return jsInvokeService.invokeFunction(this.scriptId, inArgs[0], inArgs[1]).get().toString();
+        return jsInvokeService.invokeFunction(tenantId, this.scriptId, inArgs[0], inArgs[1]).get().toString();
     }
 
     private static String[] prepareArgs(byte[] data, UplinkMetaData metadata) {

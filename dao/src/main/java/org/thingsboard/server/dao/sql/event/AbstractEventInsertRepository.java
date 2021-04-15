@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -66,11 +66,11 @@ public abstract class AbstractEventInsertRepository implements EventInsertReposi
                 TransactionStatus transaction = getTransactionStatus(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                 try {
                     eventEntity = processSaveOrUpdate(entity, insertOrUpdateOnUniqueKeyConflict);
+                    transactionManager.commit(transaction);
                 } catch (Throwable th) {
                     log.trace("Could not execute the update statement for Entity with entityId {} and entityType {}", entity.getEventUid(), entity.getEventType());
                     transactionManager.rollback(transaction);
                 }
-                transactionManager.commit(transaction);
             } else {
                 log.trace("Could not execute the insert statement for Entity with entityId {} and entityType {}", entity.getEventUid(), entity.getEventType());
             }

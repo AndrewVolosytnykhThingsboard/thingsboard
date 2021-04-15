@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -38,6 +38,7 @@ public class CacheConstants {
     public static final String ASSET_CACHE = "assets";
     public static final String DOWNLINK_CACHE = "downlink";
     public static final String ENTITY_VIEW_CACHE = "entityViews";
+    public static final String EDGE_CACHE = "edges";
     public static final String ROLE_CACHE = "roles";
     public static final String USER_PERMISSIONS_CACHE = "permissions";
     public static final String ENTITY_OWNERS_CACHE = "owners";
@@ -46,4 +47,6 @@ public class CacheConstants {
     public static final String TENANT_PROFILE_CACHE = "tenantProfiles";
     public static final String DEVICE_PROFILE_CACHE = "deviceProfiles";
     public static final String REMOTE_INTEGRATIONS_CACHE = "remoteIntegrations";
+    public static final String ATTRIBUTES_CACHE = "attributes";
+    public static final String TOKEN_OUTDATAGE_TIME_CACHE = "tokensOutdatageTime";
 }

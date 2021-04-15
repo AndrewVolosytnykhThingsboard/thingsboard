@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -254,7 +254,7 @@ public class ConverterController extends BaseController {
             String errorText = "";
             JSUplinkEvaluator jsUplinkEvaluator = null;
             try {
-                jsUplinkEvaluator = new JSUplinkEvaluator(jsSandboxService, getCurrentUser().getId(), decoder);
+                jsUplinkEvaluator = new JSUplinkEvaluator(getTenantId(), jsSandboxService, getCurrentUser().getId(), decoder);
                 output = jsUplinkEvaluator.execute(payload, uplinkMetaData);
             } catch (Exception e) {
                 log.error("Error evaluating JS UpLink Converter function", e);
@@ -296,7 +296,7 @@ public class ConverterController extends BaseController {
             JSDownlinkEvaluator jsDownlinkEvaluator = null;
             try {
                 TbMsg inMsg = TbMsg.newMsg(msgType, null, new TbMsgMetaData(metadataMap), data);
-                jsDownlinkEvaluator = new JSDownlinkEvaluator(jsSandboxService, getCurrentUser().getId(), encoder);
+                jsDownlinkEvaluator = new JSDownlinkEvaluator(getTenantId(), jsSandboxService, getCurrentUser().getId(), encoder);
                 output = jsDownlinkEvaluator.execute(inMsg, integrationMetaData);
                 validateDownLinkOutput(output);
             } catch (Exception e) {

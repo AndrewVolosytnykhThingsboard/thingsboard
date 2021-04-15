@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -48,8 +48,10 @@ import org.thingsboard.rule.engine.util.EntityContainer;
 import org.thingsboard.server.common.data.Customer;
 import org.thingsboard.server.common.data.DashboardInfo;
 import org.thingsboard.server.common.data.Device;
+import org.thingsboard.server.common.data.Edge;
 import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.common.data.EntityView;
+import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.asset.Asset;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.EntityIdFactory;
@@ -63,7 +65,9 @@ import org.thingsboard.server.dao.asset.AssetService;
 import org.thingsboard.server.dao.customer.CustomerService;
 import org.thingsboard.server.dao.dashboard.DashboardService;
 import org.thingsboard.server.dao.device.DeviceService;
+import org.thingsboard.server.dao.edge.EdgeService;
 import org.thingsboard.server.dao.entityview.EntityViewService;
+import org.thingsboard.server.dao.user.UserService;
 
 import java.util.List;
 import java.util.Optional;
@@ -83,7 +87,7 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
     @Override
     public void init(TbContext ctx, TbNodeConfiguration configuration) throws TbNodeException {
         this.config = loadEntityNodeActionConfig(configuration);
-        CacheBuilder cacheBuilder = CacheBuilder.newBuilder();
+        CacheBuilder<Object, Object> cacheBuilder = CacheBuilder.newBuilder();
         if (this.config.getEntityCacheExpiration() > 0) {
             cacheBuilder.expireAfterWrite(this.config.getEntityCacheExpiration(), TimeUnit.SECONDS);
         }
@@ -154,7 +158,7 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
     }
 
     protected String processPattern(TbMsg msg, String pattern) {
-        return TbNodeUtils.processPattern(pattern, msg.getMetaData());
+        return TbNodeUtils.processPattern(pattern, msg);
     }
 
     @Data
@@ -256,6 +260,13 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
                         targetEntity.setEntityId(entityView.getId());
                     }
                     break;
+                case EDGE:
+                    EdgeService edgeService = ctx.getEdgeService();
+                    Edge edge = edgeService.findEdgeByTenantIdAndName(ctx.getTenantId(), entitykey.getEntityName());
+                    if (edge != null) {
+                        targetEntity.setEntityId(edge.getId());
+                    }
+                    break;
                 case DASHBOARD:
                     DashboardService dashboardService = ctx.getDashboardService();
                     PageData<DashboardInfo> dashboardInfoTextPageData = dashboardService.findDashboardsByTenantId(ctx.getTenantId(), new PageLink(200, 0, entitykey.getEntityName()));
@@ -265,6 +276,13 @@ public abstract class TbAbstractRelationActionNode<C extends TbAbstractRelationA
                         }
                     }
                     break;
+                case USER:
+                    UserService userService = ctx.getUserService();
+                    User user = userService.findUserByEmail(ctx.getTenantId(), entitykey.getEntityName());
+                    if(user != null){
+                        targetEntity.setEntityId(user.getId());
+                    }
+                    break;    
                 default:
                     return targetEntity;
             }

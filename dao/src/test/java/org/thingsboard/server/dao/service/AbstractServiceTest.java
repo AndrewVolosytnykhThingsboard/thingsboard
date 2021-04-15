@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -42,7 +42,6 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
-import org.thingsboard.server.common.data.BaseData;
 import org.thingsboard.server.common.data.DeviceProfile;
 import org.thingsboard.server.common.data.DeviceProfileType;
 import org.thingsboard.server.common.data.DeviceTransportType;
@@ -53,10 +52,7 @@ import org.thingsboard.server.common.data.device.profile.DefaultDeviceProfileTra
 import org.thingsboard.server.common.data.device.profile.DeviceProfileData;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.HasId;
-import org.thingsboard.server.common.data.id.RuleChainId;
 import org.thingsboard.server.common.data.id.TenantId;
-import org.thingsboard.server.common.data.id.UUIDBased;
-import org.thingsboard.server.common.data.rule.RuleChain;
 import org.thingsboard.server.dao.alarm.AlarmService;
 import org.thingsboard.server.dao.asset.AssetService;
 import org.thingsboard.server.dao.audit.AuditLogLevelFilter;
@@ -68,17 +64,21 @@ import org.thingsboard.server.dao.dashboard.DashboardService;
 import org.thingsboard.server.dao.device.DeviceCredentialsService;
 import org.thingsboard.server.dao.device.DeviceProfileService;
 import org.thingsboard.server.dao.device.DeviceService;
+import org.thingsboard.server.dao.edge.EdgeEventService;
+import org.thingsboard.server.dao.edge.EdgeService;
 import org.thingsboard.server.dao.entity.EntityService;
 import org.thingsboard.server.dao.entityview.EntityViewService;
 import org.thingsboard.server.dao.event.EventService;
 import org.thingsboard.server.dao.group.EntityGroupService;
 import org.thingsboard.server.dao.integration.IntegrationService;
 import org.thingsboard.server.dao.relation.RelationService;
+import org.thingsboard.server.dao.resource.TbResourceService;
 import org.thingsboard.server.dao.rule.RuleChainService;
 import org.thingsboard.server.dao.settings.AdminSettingsService;
 import org.thingsboard.server.dao.tenant.TenantProfileService;
 import org.thingsboard.server.dao.tenant.TenantService;
 import org.thingsboard.server.dao.timeseries.TimeseriesService;
+import org.thingsboard.server.dao.usagerecord.ApiUsageStateService;
 import org.thingsboard.server.dao.user.UserService;
 import org.thingsboard.server.dao.widget.WidgetTypeService;
 import org.thingsboard.server.dao.widget.WidgetsBundleService;
@@ -103,6 +103,9 @@ public abstract class AbstractServiceTest {
 
     @Autowired
     protected UserService userService;
+
+    @Autowired
+    protected ApiUsageStateService apiUsageStateService;
 
     @Autowired
     protected AdminSettingsService adminSettingsService;
@@ -162,6 +165,12 @@ public abstract class AbstractServiceTest {
     protected WhiteLabelingService whiteLabelingService;
 
     @Autowired
+    protected EdgeService edgeService;
+
+    @Autowired
+    protected EdgeEventService edgeEventService;
+
+    @Autowired
     private ComponentDescriptorService componentDescriptorService;
 
     @Autowired
@@ -172,6 +181,9 @@ public abstract class AbstractServiceTest {
 
     @Autowired
     protected DeviceProfileService deviceProfileService;
+
+    @Autowired
+    protected TbResourceService resourceService;
 
     class IdComparator<D extends HasId> implements Comparator<D> {
         @Override

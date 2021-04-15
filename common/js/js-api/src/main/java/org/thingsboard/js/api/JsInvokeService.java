@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -31,14 +31,15 @@
 package org.thingsboard.js.api;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import org.thingsboard.server.common.data.id.TenantId;
 
 import java.util.UUID;
 
 public interface JsInvokeService {
 
-    ListenableFuture<UUID> eval(JsScriptType scriptType, String scriptBody, String... argNames);
+    ListenableFuture<UUID> eval(TenantId tenantId, JsScriptType scriptType, String scriptBody, String... argNames);
 
-    ListenableFuture<Object> invokeFunction(UUID scriptId, Object... args);
+    ListenableFuture<Object> invokeFunction(TenantId tenantId, UUID scriptId, Object... args);
 
     ListenableFuture<Void> release(UUID scriptId);
 

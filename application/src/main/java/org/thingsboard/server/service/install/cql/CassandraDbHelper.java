@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -52,7 +52,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
@@ -182,19 +181,21 @@ public class CassandraDbHelper {
                 if (row.isNull(index)) {
                     return null;
                 } else if (type.getProtocolCode() == ProtocolConstants.DataType.DOUBLE) {
-                    str = new Double(row.getDouble(index)).toString();
+                    str = Double.valueOf(row.getDouble(index)).toString();
                 } else if (type.getProtocolCode() == ProtocolConstants.DataType.INT) {
-                    str = new Integer(row.getInt(index)).toString();
+                    str = Integer.valueOf(row.getInt(index)).toString();
                 } else if (type.getProtocolCode() == ProtocolConstants.DataType.BIGINT) {
-                    str = new Long(row.getLong(index)).toString();
+                    str = Long.valueOf(row.getLong(index)).toString();
                 } else if (type.getProtocolCode() == ProtocolConstants.DataType.UUID) {
                     str = row.getUuid(index).toString();
                 } else if (type.getProtocolCode() == ProtocolConstants.DataType.TIMEUUID) {
                     str = row.getUuid(index).toString();
                 } else if (type.getProtocolCode() == ProtocolConstants.DataType.FLOAT) {
-                    str = new Float(row.getFloat(index)).toString();
+                    str = Float.valueOf(row.getFloat(index)).toString();
                 } else if (type.getProtocolCode() == ProtocolConstants.DataType.TIMESTAMP) {
                     str = ""+row.getInstant(index).toEpochMilli();
+                } else if (type.getProtocolCode() == ProtocolConstants.DataType.BOOLEAN) {
+                    str = Boolean.valueOf(row.getBoolean(index)).toString();
                 } else {
                     str = row.getString(index);
                 }
@@ -243,6 +244,8 @@ public class CassandraDbHelper {
             boundStatementBuilder.setFloat(column, Float.valueOf(value));
         } else if (type.getProtocolCode() == ProtocolConstants.DataType.TIMESTAMP) {
             boundStatementBuilder.setInstant(column, Instant.ofEpochMilli(Long.valueOf(value)));
+        } else if (type.getProtocolCode() == ProtocolConstants.DataType.BOOLEAN) {
+            boundStatementBuilder.setBoolean(column, Boolean.valueOf(value));
         } else {
             boundStatementBuilder.setString(column, value);
         }

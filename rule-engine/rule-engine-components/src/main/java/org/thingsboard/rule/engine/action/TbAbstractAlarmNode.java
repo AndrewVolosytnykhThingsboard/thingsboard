@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -43,7 +43,7 @@ import org.thingsboard.rule.engine.api.TbNodeException;
 import org.thingsboard.server.common.data.DataConstants;
 import org.thingsboard.server.common.msg.TbMsg;
 import org.thingsboard.server.common.msg.TbMsgMetaData;
-import org.thingsboard.server.dao.util.mapping.JacksonUtil;
+import org.thingsboard.common.util.JacksonUtil;
 
 import static org.thingsboard.common.util.DonAsynchron.withCallback;
 
@@ -73,13 +73,11 @@ public abstract class TbAbstractAlarmNode<C extends TbAbstractAlarmNodeConfigura
                     if (alarmResult.alarm == null) {
                         ctx.tellNext(msg, "False");
                     } else if (alarmResult.isCreated) {
-                        ctx.enqueue(ctx.alarmCreatedMsg(alarmResult.alarm, ctx.getSelfId()),
-                                () -> ctx.tellNext(toAlarmMsg(ctx, alarmResult, msg), "Created"),
-                                throwable -> ctx.tellFailure(toAlarmMsg(ctx, alarmResult, msg), throwable));
+                        tellNext(ctx, msg, alarmResult, DataConstants.ENTITY_CREATED, "Created");
                     } else if (alarmResult.isUpdated) {
-                        ctx.tellNext(toAlarmMsg(ctx, alarmResult, msg), "Updated");
+                        tellNext(ctx, msg, alarmResult, DataConstants.ENTITY_UPDATED, "Updated");
                     } else if (alarmResult.isCleared) {
-                        ctx.tellNext(toAlarmMsg(ctx, alarmResult, msg), "Cleared");
+                        tellNext(ctx, msg, alarmResult, DataConstants.ALARM_CLEAR, "Cleared");
                     } else {
                         ctx.tellSuccess(msg);
                     }
@@ -124,4 +122,9 @@ public abstract class TbAbstractAlarmNode<C extends TbAbstractAlarmNodeConfigura
         }
     }
 
+    private void tellNext(TbContext ctx, TbMsg msg, TbAlarmResult alarmResult, String entityAction, String alarmAction) {
+        ctx.enqueue(ctx.alarmActionMsg(alarmResult.alarm, ctx.getSelfId(), entityAction),
+                () -> ctx.tellNext(toAlarmMsg(ctx, alarmResult, msg), alarmAction),
+                throwable -> ctx.tellFailure(toAlarmMsg(ctx, alarmResult, msg), throwable));
+    }
 }

@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -31,8 +31,7 @@
 
 import { EntityType } from '@shared/models/entity-type.models';
 import { EntityId } from '@shared/models/id/entity-id';
-import { EntitySearchDirection, EntityTypeFilter } from '@shared/models/relation.models';
-import { EntityInfo } from './entity.models';
+import { EntitySearchDirection, RelationEntityTypeFilter } from '@shared/models/relation.models';
 import { EntityFilter } from '@shared/models/query/query.models';
 
 export enum AliasFilterType {
@@ -40,6 +39,7 @@ export enum AliasFilterType {
   entityGroup = 'entityGroup',
   entityList = 'entityList',
   entityName = 'entityName',
+  entityType = 'entityType',
   entityGroupList = 'entityGroupList',
   entityGroupName = 'entityGroupName',
   entitiesByGroupName = 'entitiesByGroupName',
@@ -48,10 +48,13 @@ export enum AliasFilterType {
   assetType = 'assetType',
   deviceType = 'deviceType',
   entityViewType = 'entityViewType',
+  edgeType = 'edgeType',
+  apiUsageState = 'apiUsageState',
   relationsQuery = 'relationsQuery',
   assetSearchQuery = 'assetSearchQuery',
   deviceSearchQuery = 'deviceSearchQuery',
-  entityViewSearchQuery = 'entityViewSearchQuery'
+  entityViewSearchQuery = 'entityViewSearchQuery',
+  edgeSearchQuery = 'edgeSearchQuery',
 }
 
 export const aliasFilterTypeTranslationMap = new Map<AliasFilterType, string>(
@@ -60,6 +63,7 @@ export const aliasFilterTypeTranslationMap = new Map<AliasFilterType, string>(
     [ AliasFilterType.entityGroup, 'alias.filter-type-entity-group' ],
     [ AliasFilterType.entityList, 'alias.filter-type-entity-list' ],
     [ AliasFilterType.entityName, 'alias.filter-type-entity-name' ],
+    [ AliasFilterType.entityType, 'alias.filter-type-entity-type' ],
     [ AliasFilterType.entityGroupList, 'alias.filter-type-entity-group-list' ],
     [ AliasFilterType.entityGroupName, 'alias.filter-type-entity-group-name' ],
     [ AliasFilterType.entitiesByGroupName, 'alias.filter-type-entities-by-group-name' ],
@@ -68,10 +72,13 @@ export const aliasFilterTypeTranslationMap = new Map<AliasFilterType, string>(
     [ AliasFilterType.assetType, 'alias.filter-type-asset-type' ],
     [ AliasFilterType.deviceType, 'alias.filter-type-device-type' ],
     [ AliasFilterType.entityViewType, 'alias.filter-type-entity-view-type' ],
+    [ AliasFilterType.edgeType, 'alias.filter-type-edge-type' ],
+    [ AliasFilterType.apiUsageState, 'alias.filter-type-apiUsageState' ],
     [ AliasFilterType.relationsQuery, 'alias.filter-type-relations-query' ],
     [ AliasFilterType.assetSearchQuery, 'alias.filter-type-asset-search-query' ],
     [ AliasFilterType.deviceSearchQuery, 'alias.filter-type-device-search-query' ],
-    [ AliasFilterType.entityViewSearchQuery, 'alias.filter-type-entity-view-search-query' ]
+    [ AliasFilterType.entityViewSearchQuery, 'alias.filter-type-entity-view-search-query' ],
+    [ AliasFilterType.edgeSearchQuery, 'alias.filter-type-edge-search-query' ],
   ]
 );
 
@@ -98,6 +105,10 @@ export interface EntityNameFilter {
   entityNameFilter?: string;
 }
 
+export interface EntityTypeFilter {
+  entityType?: EntityType;
+}
+
 export interface EntityGroupListFilter {
   groupType?: EntityType;
   entityGroupList?: string[];
@@ -112,6 +123,7 @@ export interface EntitiesByGroupNameFilter {
   groupStateEntity?: boolean;
   stateEntityParamName?: string;
   groupType?: EntityType;
+  ownerId?: EntityId;
   entityGroupNameFilter?: string;
 }
 
@@ -140,13 +152,18 @@ export interface EntityViewFilter {
   entityViewNameFilter?: string;
 }
 
+export interface EdgeTypeFilter {
+  edgeType?: string;
+  edgeNameFilter?: string;
+}
+
 export interface RelationsQueryFilter {
   rootStateEntity?: boolean;
   stateEntityParamName?: string;
   defaultStateEntity?: EntityId;
   rootEntity?: EntityId;
   direction?: EntitySearchDirection;
-  filters?: Array<EntityTypeFilter>;
+  filters?: Array<RelationEntityTypeFilter>;
   maxLevel?: number;
   fetchLastLevelOnly?: boolean;
 }
@@ -162,6 +179,11 @@ export interface EntitySearchQueryFilter {
   fetchLastLevelOnly?: boolean;
 }
 
+// tslint:disable-next-line:no-empty-interface
+export interface ApiUsageStateFilter {
+
+}
+
 export interface AssetSearchQueryFilter extends EntitySearchQueryFilter {
   assetTypes?: string[];
 }
@@ -174,11 +196,16 @@ export interface EntityViewSearchQueryFilter extends EntitySearchQueryFilter {
   entityViewTypes?: string[];
 }
 
+export interface EdgeSearchQueryFilter extends EntitySearchQueryFilter {
+  edgeTypes?: string[];
+}
+
 export type EntityFilters =
   SingleEntityFilter &
   EntityGroupFilter &
   EntityListFilter &
   EntityNameFilter &
+  EntityTypeFilter &
   EntityGroupListFilter &
   EntityGroupNameFilter &
   EntitiesByGroupNameFilter &
@@ -187,10 +214,13 @@ export type EntityFilters =
   AssetTypeFilter &
   DeviceTypeFilter &
   EntityViewFilter &
+  EdgeTypeFilter &
   RelationsQueryFilter &
   AssetSearchQueryFilter &
   DeviceSearchQueryFilter &
-  EntityViewSearchQueryFilter;
+  EntityViewSearchQueryFilter &
+  EntitySearchQueryFilter &
+  EdgeSearchQueryFilter;
 
 export interface EntityAliasFilter extends EntityFilters {
   type?: AliasFilterType;

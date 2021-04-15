@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -31,6 +31,7 @@
 package org.thingsboard.server.dao.sql.device;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Component;
@@ -57,6 +58,7 @@ import java.util.UUID;
  * Created by Valerii Sosliuk on 5/6/2017.
  */
 @Component
+@Slf4j
 public class JpaDeviceDao extends JpaAbstractSearchTextDao<DeviceEntity, Device> implements DeviceDao {
 
     @Autowired
@@ -193,6 +195,11 @@ public class JpaDeviceDao extends JpaAbstractSearchTextDao<DeviceEntity, Device>
     @Override
     public Long countDevicesByDeviceProfileId(TenantId tenantId, UUID deviceProfileId) {
         return deviceRepository.countByDeviceProfileId(deviceProfileId);
+    }
+
+    @Override
+    public Long countByTenantId(TenantId tenantId) {
+        return deviceRepository.countByTenantId(tenantId.getId());
     }
 
     private List<EntitySubtype> convertTenantDeviceTypesToDto(UUID tenantId, List<String> types) {

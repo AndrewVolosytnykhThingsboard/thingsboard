@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -36,4 +36,7 @@ import org.thingsboard.server.dao.model.sql.SchedulerEventEntity;
 import java.util.UUID;
 
 public interface SchedulerEventRepository extends CrudRepository<SchedulerEventEntity, UUID> {
+
+    Long countByTenantId(UUID tenantId);
+
 }

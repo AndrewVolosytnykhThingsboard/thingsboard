@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -43,11 +43,15 @@ import org.thingsboard.js.api.JsInvokeService;
 import org.thingsboard.js.api.JsScriptType;
 import org.thingsboard.js.api.RuleNodeScriptFactory;
 import org.thingsboard.server.common.data.id.EntityId;
+import org.thingsboard.server.common.data.id.RuleNodeId;
+import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.msg.TbMsg;
 import org.thingsboard.server.common.msg.TbMsgMetaData;
 
 import javax.script.ScriptException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -61,19 +65,19 @@ public class RuleNodeJsScriptEngine implements org.thingsboard.rule.engine.api.S
     private final JsInvokeService sandboxService;
 
     private final UUID scriptId;
+    private final TenantId tenantId;
     private final EntityId entityId;
 
-    public RuleNodeJsScriptEngine(JsInvokeService sandboxService, EntityId entityId, String script,
-                                  String... argNames) {
-        this(sandboxService, entityId, JsScriptType.RULE_NODE_SCRIPT, script, argNames);
+    public RuleNodeJsScriptEngine(TenantId tenantId, JsInvokeService sandboxService, EntityId entityId, String script, String... argNames) {
+        this(tenantId, sandboxService, entityId, JsScriptType.RULE_NODE_SCRIPT, script, argNames);
     }
 
-    public RuleNodeJsScriptEngine(JsInvokeService sandboxService, EntityId entityId, JsScriptType scriptType, String script,
-                                  String... argNames) {
+    public RuleNodeJsScriptEngine(TenantId tenantId, JsInvokeService sandboxService, EntityId entityId, JsScriptType scriptType, String script, String... argNames) {
+        this.tenantId = tenantId;
         this.sandboxService = sandboxService;
         this.entityId = entityId;
         try {
-            this.scriptId = this.sandboxService.eval(scriptType, script, argNames).get();
+            this.scriptId = this.sandboxService.eval(tenantId, scriptType, script, argNames).get();
         } catch (Exception e) {
             Throwable t = e;
             if (e instanceof ExecutionException) {
@@ -127,24 +131,34 @@ public class RuleNodeJsScriptEngine implements org.thingsboard.rule.engine.api.S
     }
 
     @Override
-    public TbMsg executeUpdate(TbMsg msg) throws ScriptException {
+    public List<TbMsg> executeUpdate(TbMsg msg) throws ScriptException {
         JsonNode result = executeScript(msg);
-        if (!result.isObject()) {
+        if (result.isObject()) {
+            return Collections.singletonList(unbindMsg(result, msg));
+        } else if (result.isArray()){
+            List<TbMsg> res = new ArrayList<>(result.size());
+            result.forEach(jsonObject -> res.add(unbindMsg(jsonObject, msg)));
+            return res;
+        } else {
             log.warn("Wrong result type: {}", result.getNodeType());
             throw new ScriptException("Wrong result type: " + result.getNodeType());
         }
-        return unbindMsg(result, msg);
     }
 
     @Override
-    public ListenableFuture<TbMsg> executeUpdateAsync(TbMsg msg) {
+    public ListenableFuture<List<TbMsg>> executeUpdateAsync(TbMsg msg) {
         ListenableFuture<JsonNode> result = executeScriptAsync(msg);
         return Futures.transformAsync(result, json -> {
-            if (!json.isObject()) {
+            if (json.isObject()) {
+                return Futures.immediateFuture(Collections.singletonList(unbindMsg(json, msg)));
+            } else if (json.isArray()){
+                List<TbMsg> res = new ArrayList<>(json.size());
+                json.forEach(jsonObject -> res.add(unbindMsg(jsonObject, msg)));
+                return Futures.immediateFuture(res);
+            }
+            else{
                 log.warn("Wrong result type: {}", json.getNodeType());
                 return Futures.immediateFailedFuture(new ScriptException("Wrong result type: " + json.getNodeType()));
-            } else {
-                return Futures.immediateFuture(unbindMsg(json, msg));
             }
         }, MoreExecutors.directExecutor());
     }
@@ -237,7 +251,7 @@ public class RuleNodeJsScriptEngine implements org.thingsboard.rule.engine.api.S
     private JsonNode executeScript(TbMsg msg) throws ScriptException {
         try {
             String[] inArgs = prepareArgs(msg);
-            String eval = sandboxService.invokeFunction(this.scriptId, inArgs[0], inArgs[1], inArgs[2]).get().toString();
+            String eval = sandboxService.invokeFunction(tenantId, this.scriptId, inArgs[0], inArgs[1], inArgs[2]).get().toString();
             return mapper.readTree(eval);
         } catch (ExecutionException e) {
             if (e.getCause() instanceof ScriptException) {
@@ -253,10 +267,10 @@ public class RuleNodeJsScriptEngine implements org.thingsboard.rule.engine.api.S
     }
 
 
-    private JsonNode executeAttributesScript(Map<String,String> attributes) throws ScriptException {
+    private JsonNode executeAttributesScript(Map<String, String> attributes) throws ScriptException {
         try {
             String attributesStr = mapper.writeValueAsString(attributes);
-            String eval = sandboxService.invokeFunction(this.scriptId, attributesStr).get().toString();
+            String eval = sandboxService.invokeFunction(this.tenantId, this.scriptId, attributesStr).get().toString();
             return mapper.readTree(eval);
         } catch (ExecutionException e) {
             if (e.getCause() instanceof ScriptException) {
@@ -271,7 +285,7 @@ public class RuleNodeJsScriptEngine implements org.thingsboard.rule.engine.api.S
 
     private ListenableFuture<JsonNode> executeScriptAsync(TbMsg msg) {
         String[] inArgs = prepareArgs(msg);
-        return Futures.transformAsync(sandboxService.invokeFunction(this.scriptId, inArgs[0], inArgs[1], inArgs[2]),
+        return Futures.transformAsync(sandboxService.invokeFunction(tenantId, this.scriptId, inArgs[0], inArgs[1], inArgs[2]),
                 o -> {
                     try {
                         return Futures.immediateFuture(mapper.readTree(o.toString()));

@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -40,10 +40,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.async.DeferredResult;
 import org.thingsboard.common.util.ThingsBoardThreadFactory;
+import org.thingsboard.server.common.data.ApiUsageState;
 import org.thingsboard.server.common.data.Customer;
 import org.thingsboard.server.common.data.DashboardInfo;
 import org.thingsboard.server.common.data.Device;
 import org.thingsboard.server.common.data.DeviceProfile;
+import org.thingsboard.server.common.data.Edge;
 import org.thingsboard.server.common.data.EntityView;
 import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.User;
@@ -52,6 +54,7 @@ import org.thingsboard.server.common.data.blob.BlobEntityInfo;
 import org.thingsboard.server.common.data.converter.Converter;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
 import org.thingsboard.server.common.data.group.EntityGroup;
+import org.thingsboard.server.common.data.id.ApiUsageStateId;
 import org.thingsboard.server.common.data.id.AssetId;
 import org.thingsboard.server.common.data.id.BlobEntityId;
 import org.thingsboard.server.common.data.id.ConverterId;
@@ -59,6 +62,7 @@ import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.DashboardId;
 import org.thingsboard.server.common.data.id.DeviceId;
 import org.thingsboard.server.common.data.id.DeviceProfileId;
+import org.thingsboard.server.common.data.id.EdgeId;
 import org.thingsboard.server.common.data.id.EntityGroupId;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.EntityIdFactory;
@@ -86,13 +90,16 @@ import org.thingsboard.server.dao.customer.CustomerService;
 import org.thingsboard.server.dao.dashboard.DashboardService;
 import org.thingsboard.server.dao.device.DeviceProfileService;
 import org.thingsboard.server.dao.device.DeviceService;
+import org.thingsboard.server.dao.edge.EdgeService;
 import org.thingsboard.server.dao.entityview.EntityViewService;
+import org.thingsboard.server.dao.exception.IncorrectParameterException;
 import org.thingsboard.server.dao.group.EntityGroupService;
 import org.thingsboard.server.dao.integration.IntegrationService;
 import org.thingsboard.server.dao.role.RoleService;
 import org.thingsboard.server.dao.rule.RuleChainService;
 import org.thingsboard.server.dao.scheduler.SchedulerEventService;
 import org.thingsboard.server.dao.tenant.TenantService;
+import org.thingsboard.server.dao.usagerecord.ApiUsageStateService;
 import org.thingsboard.server.dao.user.UserService;
 import org.thingsboard.server.service.security.model.SecurityUser;
 import org.thingsboard.server.service.security.permission.AccessControlService;
@@ -119,6 +126,7 @@ public class AccessValidator {
     public static final String ENTITY_VIEW_WITH_REQUESTED_ID_NOT_FOUND = "Entity-view with requested id wasn't found!";
     public static final String ROLE_WITH_REQUESTED_ID_NOT_FOUND = "Role with requested id wasn't found!";
     public static final String DASHBOARD_WITH_REQUESTED_ID_NOT_FOUND = "Dashboard with requested id wasn't found!";
+    public static final String EDGE_WITH_REQUESTED_ID_NOT_FOUND = "Edge with requested id wasn't found!";
 
     @Autowired
     protected TenantService tenantService;
@@ -168,8 +176,14 @@ public class AccessValidator {
     @Autowired
     protected DashboardService dashboardService;
 
+    @Autowired(required = false)
+    protected EdgeService edgeService;
+
     @Autowired
     protected AccessControlService accessControlService;
+
+    @Autowired
+    protected ApiUsageStateService apiUsageStateService;
 
     private ExecutorService executor;
 
@@ -212,7 +226,11 @@ public class AccessValidator {
                 new FutureCallback<DeferredResult<ResponseEntity>>() {
                     @Override
                     public void onSuccess(@Nullable DeferredResult<ResponseEntity> result) {
-                        onSuccess.accept(response, currentUser.getTenantId(), entityId);
+                        try {
+                            onSuccess.accept(response, currentUser.getTenantId(), entityId);
+                        } catch (Exception e) {
+                            onFailure(e);
+                        }
                     }
 
                     @Override
@@ -274,6 +292,12 @@ public class AccessValidator {
             case DASHBOARD:
                 validateDashboard(currentUser, operation, entityId, callback);
                 return;
+            case EDGE:
+                validateEdge(currentUser, operation, entityId, callback);
+                return;
+            case API_USAGE_STATE:
+                validateApiUsageState(currentUser, operation, entityId, callback);
+                return;
             default:
                 //TODO: add support of other entities
                 throw new IllegalStateException("Not Implemented!");
@@ -330,6 +354,27 @@ public class AccessValidator {
                     callback.onSuccess(ValidationResult.accessDenied(e.getMessage()));
                 }
                 callback.onSuccess(ValidationResult.ok(deviceProfile));
+            }
+        }
+    }
+
+    private void validateApiUsageState(final SecurityUser currentUser, Operation operation, EntityId entityId, FutureCallback<ValidationResult> callback) {
+        if (currentUser.isSystemAdmin()) {
+            callback.onSuccess(ValidationResult.accessDenied(SYSTEM_ADMINISTRATOR_IS_NOT_ALLOWED_TO_PERFORM_THIS_OPERATION));
+        } else {
+            if (!operation.equals(Operation.READ_TELEMETRY)) {
+                callback.onSuccess(ValidationResult.accessDenied("Allowed only READ_TELEMETRY operation!"));
+            }
+            ApiUsageState apiUsageState = apiUsageStateService.findApiUsageStateById(currentUser.getTenantId(), new ApiUsageStateId(entityId.getId()));
+            if (apiUsageState == null) {
+                callback.onSuccess(ValidationResult.entityNotFound("Api Usage State with requested id wasn't found!"));
+            } else {
+                try {
+                    accessControlService.checkPermission(currentUser, Resource.API_USAGE_STATE, operation, entityId, apiUsageState);
+                } catch (ThingsboardException e) {
+                    callback.onSuccess(ValidationResult.accessDenied(e.getMessage()));
+                }
+                callback.onSuccess(ValidationResult.ok(apiUsageState));
             }
         }
     }
@@ -596,6 +641,26 @@ public class AccessValidator {
         }
     }
 
+    private void validateEdge(final SecurityUser currentUser, Operation operation, EntityId entityId, FutureCallback<ValidationResult> callback) {
+        if (currentUser.isSystemAdmin()) {
+            callback.onSuccess(ValidationResult.accessDenied(SYSTEM_ADMINISTRATOR_IS_NOT_ALLOWED_TO_PERFORM_THIS_OPERATION));
+        } else {
+            ListenableFuture<Edge> edgeFuture = edgeService.findEdgeByIdAsync(currentUser.getTenantId(), new EdgeId(entityId.getId()));
+            Futures.addCallback(edgeFuture, getCallback(callback, edge -> {
+                if (edge == null) {
+                    return ValidationResult.entityNotFound(EDGE_WITH_REQUESTED_ID_NOT_FOUND);
+                } else {
+                    try {
+                        accessControlService.checkPermission(currentUser, Resource.EDGE, operation, entityId, edge);
+                    } catch (ThingsboardException e) {
+                        return ValidationResult.accessDenied(e.getMessage());
+                    }
+                    return ValidationResult.ok(edge);
+                }
+            }), executor);
+        }
+    }
+
     private void validateDashboard(final SecurityUser currentUser, Operation operation, EntityId entityId, FutureCallback<ValidationResult> callback) {
         if (currentUser.isSystemAdmin()) {
             callback.onSuccess(ValidationResult.accessDenied(SYSTEM_ADMINISTRATOR_IS_NOT_ALLOWED_TO_PERFORM_THIS_OPERATION));
@@ -632,9 +697,9 @@ public class AccessValidator {
 
     public static void handleError(Throwable e, final DeferredResult<ResponseEntity> response, HttpStatus defaultErrorStatus) {
         ResponseEntity responseEntity;
-        if (e != null && e instanceof ToErrorResponseEntity) {
+        if (e instanceof ToErrorResponseEntity) {
             responseEntity = ((ToErrorResponseEntity) e).toErrorResponseEntity();
-        } else if (e != null && e instanceof IllegalArgumentException) {
+        } else if (e instanceof IllegalArgumentException || e instanceof IncorrectParameterException) {
             responseEntity = new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         } else {
             responseEntity = new ResponseEntity<>(defaultErrorStatus);

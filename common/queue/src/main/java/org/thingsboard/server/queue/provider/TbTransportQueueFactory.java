@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -30,17 +30,17 @@
  */
 package org.thingsboard.server.queue.provider;
 
-import org.thingsboard.server.queue.TbQueueConsumer;
-import org.thingsboard.server.queue.TbQueueProducer;
-import org.thingsboard.server.queue.TbQueueRequestTemplate;
-import org.thingsboard.server.queue.common.TbProtoQueueMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToCoreMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToRuleEngineMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.ToTransportMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.TransportApiRequestMsg;
 import org.thingsboard.server.gen.transport.TransportProtos.TransportApiResponseMsg;
+import org.thingsboard.server.queue.TbQueueConsumer;
+import org.thingsboard.server.queue.TbQueueProducer;
+import org.thingsboard.server.queue.TbQueueRequestTemplate;
+import org.thingsboard.server.queue.common.TbProtoQueueMsg;
 
-public interface TbTransportQueueFactory {
+public interface TbTransportQueueFactory extends TbUsageStatsClientQueueFactory {
 
     TbQueueRequestTemplate<TbProtoQueueMsg<TransportApiRequestMsg>, TbProtoQueueMsg<TransportApiResponseMsg>> createTransportApiRequestTemplate();
 

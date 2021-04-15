@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -45,20 +45,19 @@ import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.TenantProfile;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.TenantId;
-import org.thingsboard.server.common.data.id.TenantProfileId;
 import org.thingsboard.server.common.data.page.PageDataIterable;
 import org.thingsboard.server.common.data.plugin.ComponentLifecycleEvent;
 import org.thingsboard.server.common.msg.MsgType;
 import org.thingsboard.server.common.msg.TbActorMsg;
 import org.thingsboard.server.common.msg.aware.TenantAwareMsg;
+import org.thingsboard.server.common.msg.edge.EdgeEventUpdateMsg;
 import org.thingsboard.server.common.msg.plugin.ComponentLifecycleMsg;
 import org.thingsboard.server.common.msg.queue.QueueToRuleEngineMsg;
 import org.thingsboard.server.common.msg.queue.RuleEngineException;
 import org.thingsboard.server.common.msg.queue.ServiceType;
 import org.thingsboard.server.dao.model.ModelConstants;
-import org.thingsboard.server.dao.tenant.TenantProfileService;
+import org.thingsboard.server.dao.tenant.TbTenantProfileCache;
 import org.thingsboard.server.dao.tenant.TenantService;
-import org.thingsboard.server.service.profile.TbTenantProfileCache;
 import org.thingsboard.server.service.transport.msg.TransportToDeviceActorMsgWrapper;
 
 import java.util.HashSet;
@@ -107,9 +106,14 @@ public class AppActor extends ContextAwareActor {
             case DEVICE_ATTRIBUTES_UPDATE_TO_DEVICE_ACTOR_MSG:
             case DEVICE_CREDENTIALS_UPDATE_TO_DEVICE_ACTOR_MSG:
             case DEVICE_NAME_OR_TYPE_UPDATE_TO_DEVICE_ACTOR_MSG:
+            case DEVICE_EDGE_UPDATE_TO_DEVICE_ACTOR_MSG:
             case DEVICE_RPC_REQUEST_TO_DEVICE_ACTOR_MSG:
+            case DEVICE_RPC_RESPONSE_TO_DEVICE_ACTOR_MSG:
             case SERVER_RPC_RESPONSE_TO_DEVICE_ACTOR_MSG:
                 onToDeviceActorMsg((TenantAwareMsg) msg, true);
+                break;
+            case EDGE_EVENT_UPDATE_TO_EDGE_SESSION_MSG:
+                onToTenantActorMsg((EdgeEventUpdateMsg) msg);
                 break;
             default:
                 return false;
@@ -152,12 +156,12 @@ public class AppActor extends ContextAwareActor {
 
     private void onQueueToRuleEngineMsg(QueueToRuleEngineMsg msg) {
         if (TenantId.SYS_TENANT_ID.equals(msg.getTenantId())) {
-            msg.getTbMsg().getCallback().onFailure(new RuleEngineException("Message has system tenant id!"));
+            msg.getMsg().getCallback().onFailure(new RuleEngineException("Message has system tenant id!"));
         } else {
             if (!deletedTenants.contains(msg.getTenantId())) {
                 getOrCreateTenantActor(msg.getTenantId()).tell(msg);
             } else {
-                msg.getTbMsg().getCallback().onSuccess();
+                msg.getMsg().getCallback().onSuccess();
             }
         }
     }
@@ -165,15 +169,12 @@ public class AppActor extends ContextAwareActor {
     private void onComponentLifecycleMsg(ComponentLifecycleMsg msg) {
         TbActorRef target = null;
         if (TenantId.SYS_TENANT_ID.equals(msg.getTenantId())) {
-            if (msg.getEntityId().getEntityType() == EntityType.TENANT_PROFILE) {
-                tenantProfileCache.evict(new TenantProfileId(msg.getEntityId().getId()));
-            } else {
+            if (!EntityType.TENANT_PROFILE.equals(msg.getEntityId().getEntityType())) {
                 log.warn("Message has system tenant id: {}", msg);
             }
         } else {
-            if (msg.getEntityId().getEntityType() == EntityType.TENANT) {
+            if (EntityType.TENANT.equals(msg.getEntityId().getEntityType())) {
                 TenantId tenantId = new TenantId(msg.getEntityId().getId());
-                tenantProfileCache.evict(tenantId);
                 if (msg.getEvent() == ComponentLifecycleEvent.DELETED) {
                     log.info("[{}] Handling tenant deleted notification: {}", msg.getTenantId(), msg);
                     deletedTenants.add(tenantId);
@@ -211,6 +212,20 @@ public class AppActor extends ContextAwareActor {
         return ctx.getOrCreateChildActor(new TbEntityActorId(tenantId),
                 () -> DefaultActorService.TENANT_DISPATCHER_NAME,
                 () -> new TenantActor.ActorCreator(systemContext, tenantId));
+    }
+
+    private void onToTenantActorMsg(EdgeEventUpdateMsg msg) {
+        TbActorRef target = null;
+        if (ModelConstants.SYSTEM_TENANT.equals(msg.getTenantId())) {
+            log.warn("Message has system tenant id: {}", msg);
+        } else {
+            target = getOrCreateTenantActor(msg.getTenantId());
+        }
+        if (target != null) {
+            target.tellWithHighPriority(msg);
+        } else {
+            log.debug("[{}] Invalid edge event update msg: {}", msg.getTenantId(), msg);
+        }
     }
 
     public static class ActorCreator extends ContextBasedCreator {

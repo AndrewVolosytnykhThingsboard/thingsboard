@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -42,6 +42,7 @@ import org.springframework.security.authentication.LockedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.thingsboard.server.common.data.exception.ThingsboardErrorCode;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
 import org.thingsboard.server.common.msg.tools.TbRateLimitsException;
@@ -81,7 +82,12 @@ public class ThingsboardErrorResponseHandler implements AccessDeniedHandler {
                 response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
                 if (exception instanceof ThingsboardException) {
-                    handleThingsboardException((ThingsboardException) exception, response);
+                    ThingsboardException thingsboardException = (ThingsboardException) exception;
+                    if (thingsboardException.getErrorCode() == ThingsboardErrorCode.SUBSCRIPTION_VIOLATION) {
+                        handleSubscriptionException((ThingsboardException) exception, response);
+                    } else {
+                        handleThingsboardException((ThingsboardException) exception, response);
+                    }
                 } else if (exception instanceof TbRateLimitsException) {
                     handleRateLimitException(response, (TbRateLimitsException) exception);
                 } else if (exception instanceof AccessDeniedException) {
@@ -141,6 +147,11 @@ public class ThingsboardErrorResponseHandler implements AccessDeniedHandler {
                         ThingsboardErrorCode.TOO_MANY_REQUESTS, HttpStatus.TOO_MANY_REQUESTS));
     }
 
+    private void handleSubscriptionException(ThingsboardException subscriptionException, HttpServletResponse response) throws IOException {
+        response.setStatus(HttpStatus.FORBIDDEN.value());
+        mapper.writeValue(response.getWriter(),
+                (new ObjectMapper()).readValue(((HttpClientErrorException) subscriptionException.getCause()).getResponseBodyAsByteArray(), Object.class));
+    }
 
     private void handleAccessDeniedException(HttpServletResponse response) throws IOException {
         response.setStatus(HttpStatus.FORBIDDEN.value());

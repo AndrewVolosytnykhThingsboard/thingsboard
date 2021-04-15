@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -42,8 +42,10 @@ export interface RuleChain extends BaseData<RuleChainId> {
   firstRuleNodeId: RuleNodeId;
   root: boolean;
   debugMode: boolean;
+  type: string;
   configuration?: any;
   additionalInfo?: any;
+  isDefault?: boolean;
 }
 
 export interface RuleChainMetaData {
@@ -126,3 +128,8 @@ export const inputNodeComponent: RuleNodeComponentDescriptor = {
   name: 'Input',
   clazz: 'tb.internal.Input'
 };
+
+export enum RuleChainType {
+  CORE = 'CORE',
+  EDGE = 'EDGE'
+}

@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -46,4 +46,6 @@ public interface RuleNodeStateService {
     RuleNodeState save(TenantId tenantId, RuleNodeState ruleNodeState);
 
     void removeByRuleNodeId(TenantId tenantId, RuleNodeId selfId);
+
+    void removeByRuleNodeIdAndEntityId(TenantId tenantId, RuleNodeId selfId, EntityId entityId);
 }

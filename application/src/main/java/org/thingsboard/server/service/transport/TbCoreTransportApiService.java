@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -34,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
 import org.thingsboard.server.common.stats.MessagesStats;
 import org.thingsboard.server.common.stats.StatsFactory;
@@ -105,6 +106,7 @@ public class TbCoreTransportApiService {
     }
 
     @EventListener(ApplicationReadyEvent.class)
+    @Order(value = 2)
     public void onApplicationEvent(ApplicationReadyEvent applicationReadyEvent) {
         log.info("Received application ready event. Starting polling for events.");
         transportApiTemplate.init(transportApiService);

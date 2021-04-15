@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -31,10 +31,10 @@
 package org.thingsboard.server.dao.sql.user;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Component;
-import org.thingsboard.server.common.data.UUIDConverter;
 import org.thingsboard.server.common.data.User;
 import org.thingsboard.server.common.data.id.TenantId;
 import org.thingsboard.server.common.data.page.PageData;
@@ -55,6 +55,7 @@ import static org.thingsboard.server.dao.model.ModelConstants.NULL_UUID;
  * @author Valerii Sosliuk
  */
 @Component
+@Slf4j
 public class JpaUserDao extends JpaAbstractSearchTextDao<UserEntity, User> implements UserDao {
 
     @Autowired
@@ -143,5 +144,10 @@ public class JpaUserDao extends JpaAbstractSearchTextDao<UserEntity, User> imple
                         groupIds,
                         Objects.toString(pageLink.getTextSearch(), ""),
                         DaoUtil.toPageable(pageLink, UserEntity.userColumnMap)));
+    }
+
+    @Override
+    public Long countByTenantId(TenantId tenantId) {
+        return userRepository.countByTenantId(tenantId.getId());
     }
 }

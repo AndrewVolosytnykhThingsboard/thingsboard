@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -31,22 +31,19 @@
 package org.thingsboard.server.dao.dashboard;
 
 import com.datastax.oss.driver.api.core.uuid.Uuids;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.MoreExecutors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.thingsboard.server.common.data.Customer;
 import org.thingsboard.server.common.data.Dashboard;
 import org.thingsboard.server.common.data.DashboardInfo;
 import org.thingsboard.server.common.data.EntityType;
-import org.thingsboard.server.common.data.ShortEntityView;
 import org.thingsboard.server.common.data.Tenant;
 import org.thingsboard.server.common.data.exception.ThingsboardErrorCode;
 import org.thingsboard.server.common.data.exception.ThingsboardException;
@@ -61,12 +58,15 @@ import org.thingsboard.server.common.data.page.PageLink;
 import org.thingsboard.server.common.data.page.TimePageLink;
 import org.thingsboard.server.common.data.relation.EntityRelation;
 import org.thingsboard.server.common.data.relation.RelationTypeGroup;
+import org.thingsboard.server.common.data.tenant.profile.DefaultTenantProfileConfiguration;
 import org.thingsboard.server.dao.customer.CustomerDao;
+import org.thingsboard.server.dao.edge.EdgeDao;
 import org.thingsboard.server.dao.entity.AbstractEntityService;
 import org.thingsboard.server.dao.exception.DataValidationException;
 import org.thingsboard.server.dao.service.DataValidator;
 import org.thingsboard.server.dao.service.PaginatedRemover;
 import org.thingsboard.server.dao.service.Validator;
+import org.thingsboard.server.dao.tenant.TbTenantProfileCache;
 import org.thingsboard.server.dao.tenant.TenantDao;
 
 import java.util.ArrayList;
@@ -77,7 +77,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
+import java.util.function.BiFunction;
 
 import static org.thingsboard.server.dao.DaoUtil.toUUIDs;
 import static org.thingsboard.server.dao.service.Validator.validateId;
@@ -101,6 +101,13 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
 
     @Autowired
     private CustomerDao customerDao;
+
+    @Autowired
+    private EdgeDao edgeDao;
+
+    @Autowired
+    @Lazy
+    private TbTenantProfileCache tenantProfileCache;
 
     @Override
     public Dashboard findDashboardById(TenantId tenantId, DashboardId dashboardId) {
@@ -161,7 +168,7 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
         if (dashboard.addAssignedCustomer(customer)) {
             try {
                 createRelation(tenantId, new EntityRelation(customerId, dashboardId, EntityRelation.CONTAINS_TYPE, RelationTypeGroup.DASHBOARD));
-            } catch (ExecutionException | InterruptedException e) {
+            } catch (Exception e) {
                 log.warn("[{}] Failed to create dashboard relation. Customer Id: [{}]", dashboardId, customerId);
                 throw new RuntimeException(e);
             }
@@ -181,7 +188,7 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
         if (dashboard.removeAssignedCustomer(customer)) {
             try {
                 deleteRelation(tenantId, new EntityRelation(customerId, dashboardId, EntityRelation.CONTAINS_TYPE, RelationTypeGroup.DASHBOARD));
-            } catch (ExecutionException | InterruptedException e) {
+            } catch (Exception e) {
                 log.warn("[{}] Failed to delete dashboard relation. Customer Id: [{}]", dashboardId, customerId);
                 throw new RuntimeException(e);
             }
@@ -189,16 +196,6 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
         } else {
             return dashboard;
         }
-    }
-
-    private void deleteRelation(TenantId tenantId, EntityRelation dashboardRelation) throws ExecutionException, InterruptedException {
-        log.debug("Deleting Dashboard relation: {}", dashboardRelation);
-        relationService.deleteRelationAsync(tenantId, dashboardRelation).get();
-    }
-
-    private void createRelation(TenantId tenantId, EntityRelation dashboardRelation) throws ExecutionException, InterruptedException {
-        log.debug("Creating Dashboard relation: {}", dashboardRelation);
-        relationService.saveRelationAsync(tenantId, dashboardRelation).get();
     }
 
     @Override
@@ -218,6 +215,15 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
     }
 
     @Override
+    public PageData<DashboardInfo> findDashboardsByTenantIdAndCustomerId(TenantId tenantId, CustomerId customerId, PageLink pageLink) {
+        log.trace("Executing findDashboardsByTenantIdAndCustomerId, tenantId [{}], customerId [{}], pageLink [{}]", tenantId, customerId, pageLink);
+        Validator.validateId(tenantId, INCORRECT_TENANT_ID + tenantId);
+        Validator.validateId(customerId, "Incorrect customerId " + customerId);
+        Validator.validatePageLink(pageLink);
+        return dashboardInfoDao.findDashboardsByTenantIdAndCustomerId(tenantId.getId(), customerId.getId(), pageLink);
+    }
+
+    @Override
     public void deleteDashboardsByTenantId(TenantId tenantId) {
         log.trace("Executing deleteDashboardsByTenantId, tenantId [{}]", tenantId);
         Validator.validateId(tenantId, INCORRECT_TENANT_ID + tenantId);
@@ -226,25 +232,10 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
 
     @Override
     public void deleteDashboardsByTenantIdAndCustomerId(TenantId tenantId, CustomerId customerId) {
-        try {
-            List<DashboardId> dashboardIds = fetchCustomerDashboards(tenantId, customerId);
-            for (DashboardId dashboardId : dashboardIds) {
-                deleteDashboard(tenantId, dashboardId);
-            }
-        } catch (Exception e) {
-            log.error("Failed to delete dashboards", e);
-            throw new RuntimeException(e);
-        }
-    }
-
-    private List<DashboardId> fetchCustomerDashboards(TenantId tenantId, CustomerId customerId) throws Exception {
-        List<DashboardId> dashboardIds = new ArrayList<>();
-        Optional<EntityGroup> entityGroup = entityGroupService.findEntityGroupByTypeAndName(tenantId, customerId, EntityType.DASHBOARD, EntityGroup.GROUP_ALL_NAME).get();
-        if (entityGroup.isPresent()) {
-            List<EntityId> childDashboardIds = entityGroupService.findAllEntityIds(tenantId, entityGroup.get().getId(), new PageLink(Integer.MAX_VALUE)).get();
-            childDashboardIds.forEach(entityId -> dashboardIds.add(new DashboardId(entityId.getId())));
-        }
-        return dashboardIds;
+        log.trace("Executing deleteDashboardsByTenantIdAndCustomerId, tenantId [{}], customerId [{}]", tenantId, customerId);
+        Validator.validateId(tenantId, INCORRECT_TENANT_ID + tenantId);
+        Validator.validateId(customerId, "Incorrect customerId " + customerId);
+        customerDashboardsRemover.removeEntities(tenantId, customerId);
     }
 
     @Override
@@ -265,6 +256,14 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
 
     private DataValidator<Dashboard> dashboardValidator =
             new DataValidator<Dashboard>() {
+                @Override
+                protected void validateCreate(TenantId tenantId, Dashboard data) {
+                    DefaultTenantProfileConfiguration profileConfiguration =
+                            (DefaultTenantProfileConfiguration)tenantProfileCache.get(tenantId).getProfileData().getConfiguration();
+                    long maxDashboards = profileConfiguration.getMaxDashboards();
+                    validateNumberOfEntitiesPerTenant(tenantId, dashboardDao, maxDashboards, EntityType.DASHBOARD);
+                }
+
                 @Override
                 protected void validateDataImpl(TenantId tenantId, Dashboard dashboard) {
                     if (StringUtils.isEmpty(dashboard.getTitle())) {
@@ -294,6 +293,20 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
                     deleteDashboard(tenantId, new DashboardId(entity.getUuidId()));
                 }
     };
+
+    private PaginatedRemover<CustomerId, DashboardInfo> customerDashboardsRemover =
+            new PaginatedRemover<CustomerId, DashboardInfo>() {
+
+                @Override
+                protected PageData<DashboardInfo> findEntities(TenantId tenantId, CustomerId id, PageLink pageLink) {
+                    return dashboardInfoDao.findDashboardsByTenantIdAndCustomerId(tenantId.getId(), id.getId(), pageLink);
+                }
+
+                @Override
+                protected void removeEntity(TenantId tenantId, DashboardInfo entity) {
+                    deleteDashboard(tenantId, new DashboardId(entity.getUuidId()));
+                }
+            };
 
     @Override
     public List<Dashboard> exportDashboards(TenantId tenantId, EntityGroupId entityGroupId, TimePageLink pageLink) throws ThingsboardException {
@@ -388,7 +401,7 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
     }
 
     private void replaceOverwriteDashboardIds(List<Dashboard> dashboards, List<DashboardInfo> persistentDashboards) throws Exception {
-        Map<DashboardId, DashboardId> idMapping = new HashMap();
+        Map<DashboardId, DashboardId> idMapping = new HashMap<>();
         for (Dashboard dashboard : dashboards) {
             Optional<DashboardInfo> overwriteDashboardInfoOpt = persistentDashboards.stream().filter(d -> d.getTitle().equals(dashboard.getTitle())).findAny();
             DashboardId importDashboardId = dashboard.getId();
@@ -415,7 +428,7 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
     }
 
     List<Dashboard> replaceDashboardIds(List<Dashboard> dashboards) throws Exception {
-        Map<DashboardId, DashboardId> idMapping = new HashMap();
+        Map<DashboardId, DashboardId> idMapping = new HashMap<>();
         for (Dashboard dashboard : dashboards) {
             if (dashboard.getId() != null) {
                 DashboardId oldId = dashboard.getId();
@@ -432,4 +445,5 @@ public class DashboardServiceImpl extends AbstractEntityService implements Dashb
         }
         return dashboards;
     }
+
 }

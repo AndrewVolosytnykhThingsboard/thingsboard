@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -32,7 +32,7 @@
 import { Injectable } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { EntityType } from '@shared/models/entity-type.models';
-import { Observable, of } from 'rxjs';
+import {forkJoin, Observable, of} from 'rxjs';
 import {
   ImportDialogCsvComponent,
   ImportDialogCsvData
@@ -40,9 +40,9 @@ import {
 import { CustomerId } from '@shared/models/id/customer-id';
 import { DialogService } from '@core/services/dialog.service';
 import { EntityGroupService } from '@core/http/entity-group.service';
-import { EntityGroupInfo } from '@shared/models/entity-group.models';
+import {EntityGroup, EntityGroupInfo} from '@shared/models/entity-group.models';
 import { TranslateService } from '@ngx-translate/core';
-import { map, mergeMap } from 'rxjs/operators';
+import { catchError, map, mergeMap } from 'rxjs/operators';
 import { EntityId } from '@shared/models/id/entity-id';
 import { SelectOwnerDialogComponent, SelectOwnerDialogData } from '@home/dialogs/select-owner-dialog.component';
 import {
@@ -84,6 +84,8 @@ export class HomeDialogsService {
         return this.openImportDialogCSV(customerId, entityType, entityGroupId, 'device.import', 'device.device-file');
       case EntityType.ASSET:
         return this.openImportDialogCSV(customerId, entityType, entityGroupId, 'asset.import', 'asset.asset-file');
+      case EntityType.EDGE:
+        return this.openImportDialogCSV(customerId, entityType, entityGroupId, 'edge.import', 'edge.edge-file');
     }
   }
 
@@ -201,4 +203,59 @@ export class HomeDialogsService {
       }
     }).afterClosed();
   }
+
+  public unassignEntityGroupFromEdge($event: Event, entityGroup: EntityGroup, edgeId: string): Observable<boolean> {
+    const title = this.translate.instant('edge.unassign-entity-group-from-edge-title',
+      {entityGroupName: entityGroup.name});
+    const content = this.translate.instant('edge.unassign-entity-group-from-edge-text');
+    return this.dialogService.confirm(
+      title,
+      content).pipe(
+      mergeMap((res) => {
+          if (res) {
+            return this.entityGroupService.unassignEntityGroupFromEdge(edgeId, entityGroup.id.id, entityGroup.type).pipe(
+              map(() => res)
+            );
+          } else {
+            return of(res);
+          }
+        }
+      ));
+  }
+
+  public unassignEntityGroupsFromEdge($event: Event, entityGroups: Array<EntityGroup>, edgeId: string): Observable<boolean> {
+    const title = this.translate.instant('edge.unassign-entity-groups-from-edge-title', { count: entityGroups.length });
+    const content = this.translate.instant('edge.unassign-entity-groups-from-edge-text');
+    const tasks: Observable<Array<EntityGroup>>[] = [];
+    entityGroups.forEach((entityGroup) => {
+      tasks.push(this.entityGroupService.unassignEntityGroupFromEdge(edgeId, entityGroup.id.id, entityGroup.type).pipe(
+        map(() => entityGroup.id),
+        catchError(() => of(null)
+        )));
+    });
+    return this.dialogService.confirm(
+      title,
+      content).pipe(
+      mergeMap((res) => {
+          if (res) {
+            return forkJoin(tasks).pipe(
+              map(() => res)
+            );
+          } else {
+            return of(res);
+          }
+        }
+      ));
+  }
+
+  // const tasks: Observable<Array<EntityGroup>>[] = [];
+  // entities.forEach((entity) => {
+  //   tasks.push(this.entityGroupService.unassignEntityGroupFromEdge(this.edgeId, entity.id.id, entity.type));
+  // });
+  // forkJoin(tasks).subscribe(
+  //   () => {
+  //     this.table.updateData();
+  //   }
+  // );
+
 }

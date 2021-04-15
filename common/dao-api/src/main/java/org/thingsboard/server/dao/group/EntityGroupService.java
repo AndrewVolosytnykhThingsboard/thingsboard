@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -31,10 +31,12 @@
 package org.thingsboard.server.dao.group;
 
 import com.google.common.util.concurrent.ListenableFuture;
+import org.thingsboard.server.common.data.Edge;
 import org.thingsboard.server.common.data.EntityType;
 import org.thingsboard.server.common.data.ShortEntityView;
 import org.thingsboard.server.common.data.group.EntityGroup;
 import org.thingsboard.server.common.data.id.CustomerId;
+import org.thingsboard.server.common.data.id.EdgeId;
 import org.thingsboard.server.common.data.id.EntityGroupId;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.TenantId;
@@ -115,4 +117,13 @@ public interface EntityGroupService {
 
     boolean isEntityInGroup(EntityId entityId, EntityGroupId entityGroupId);
 
+    EntityGroup assignEntityGroupToEdge(TenantId tenantId, EntityGroupId entityGroupId, EdgeId edgeId, EntityType groupType);
+
+    EntityGroup unassignEntityGroupFromEdge(TenantId tenantId, EntityGroupId entityGroupId, EdgeId edgeId, EntityType groupType);
+
+    ListenableFuture<List<EntityGroup>> findEdgeEntityGroupsByType(TenantId tenantId, EdgeId edgeId, EntityType groupType);
+
+    ListenableFuture<Boolean> checkEdgeEntityGroupById(TenantId tenantId, EdgeId edgeId, EntityGroupId entityGroupId, EntityType groupType);
+
+    ListenableFuture<EntityGroup> findOrCreateEdgeAllGroup(TenantId tenantId, Edge edge, String edgeName, EntityType groupType);
 }

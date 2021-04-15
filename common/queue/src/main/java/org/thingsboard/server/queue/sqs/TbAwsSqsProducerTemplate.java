@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -102,8 +102,9 @@ public class TbAwsSqsProducerTemplate<T extends TbQueueMsg> implements TbQueuePr
         sendMsgRequest.withQueueUrl(getQueueUrl(tpi.getFullTopicName()));
         sendMsgRequest.withMessageBody(gson.toJson(new DefaultTbQueueMsg(msg)));
 
-        sendMsgRequest.withMessageGroupId(tpi.getTopic());
-        sendMsgRequest.withMessageDeduplicationId(UUID.randomUUID().toString());
+        String sqsMsgId = UUID.randomUUID().toString();
+        sendMsgRequest.withMessageGroupId(sqsMsgId);
+        sendMsgRequest.withMessageDeduplicationId(sqsMsgId);
 
         ListenableFuture<SendMessageResult> future = producerExecutor.submit(() -> sqsClient.sendMessage(sendMsgRequest));
 

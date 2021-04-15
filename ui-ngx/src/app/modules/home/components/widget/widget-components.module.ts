@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -47,9 +47,13 @@ import {
 } from '@home/components/widget/lib/date-range-navigator/date-range-navigator.component';
 import { MultipleInputWidgetComponent } from './lib/multiple-input-widget.component';
 import { TripAnimationComponent } from './trip-animation/trip-animation.component';
-import { WebCameraInputWidgetComponent } from './lib/web-camera-input.component';
+import { PhotoCameraInputWidgetComponent } from './lib/photo-camera-input.component';
 import { GatewayFormComponent } from './lib/gateway/gateway-form.component';
 import { ImportExportService } from '@home/components/import-export/import-export.service';
+import { NavigationCardsWidgetComponent } from '@home/components/widget/lib/navigation-cards-widget.component';
+import { NavigationCardWidgetComponent } from '@home/components/widget/lib/navigation-card-widget.component';
+import { EdgesOverviewWidgetComponent } from '@home/components/widget/lib/edges-overview-widget.component';
+import { JsonInputWidgetComponent } from '@home/components/widget/lib/json-input-widget.component';
 
 @NgModule({
   declarations:
@@ -60,12 +64,16 @@ import { ImportExportService } from '@home/components/import-export/import-expor
       AlarmsTableWidgetComponent,
       TimeseriesTableWidgetComponent,
       EntitiesHierarchyWidgetComponent,
+      EdgesOverviewWidgetComponent,
       DateRangeNavigatorWidgetComponent,
       DateRangeNavigatorPanelComponent,
+      JsonInputWidgetComponent,
       MultipleInputWidgetComponent,
       TripAnimationComponent,
-      WebCameraInputWidgetComponent,
-      GatewayFormComponent
+      PhotoCameraInputWidgetComponent,
+      GatewayFormComponent,
+      NavigationCardsWidgetComponent,
+      NavigationCardWidgetComponent
     ],
   imports: [
     CommonModule,
@@ -78,17 +86,22 @@ import { ImportExportService } from '@home/components/import-export/import-expor
     AlarmsTableWidgetComponent,
     TimeseriesTableWidgetComponent,
     EntitiesHierarchyWidgetComponent,
+    EdgesOverviewWidgetComponent,
     RpcWidgetsModule,
     SharedHomeComponentsModule,
     DateRangeNavigatorWidgetComponent,
+    JsonInputWidgetComponent,
     MultipleInputWidgetComponent,
     TripAnimationComponent,
-    WebCameraInputWidgetComponent,
-    GatewayFormComponent
+    PhotoCameraInputWidgetComponent,
+    GatewayFormComponent,
+    NavigationCardsWidgetComponent,
+    NavigationCardWidgetComponent
   ],
   providers: [
     CustomDialogService,
     ImportExportService
   ]
 })
-export class WidgetComponentsModule { }
+export class WidgetComponentsModule {
+}

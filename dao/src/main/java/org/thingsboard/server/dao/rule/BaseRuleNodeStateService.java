@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -92,6 +92,20 @@ public class BaseRuleNodeStateService extends AbstractEntityService implements R
             throw new DataValidationException("Rule node id should be specified!.");
         }
         ruleNodeStateDao.removeByRuleNodeId(ruleNodeId.getId());
+    }
+
+    @Override
+    public void removeByRuleNodeIdAndEntityId(TenantId tenantId, RuleNodeId ruleNodeId, EntityId entityId) {
+        if (tenantId == null) {
+            throw new DataValidationException("Tenant id should be specified!.");
+        }
+        if (ruleNodeId == null) {
+            throw new DataValidationException("Rule node id should be specified!.");
+        }
+        if (entityId == null) {
+            throw new DataValidationException("Entity id should be specified!.");
+        }
+        ruleNodeStateDao.removeByRuleNodeIdAndEntityId(ruleNodeId.getId(), entityId.getId());
     }
 
     public RuleNodeState saveOrUpdate(TenantId tenantId, RuleNodeState ruleNodeState, boolean update) {

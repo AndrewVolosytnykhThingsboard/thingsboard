@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -44,6 +44,7 @@ public class EntityRelation implements Serializable {
     private static final long serialVersionUID = 2807343040519543363L;
 
     public static final String INTEGRATION_TYPE = "ManagedByIntegration";
+    public static final String EDGE_TYPE = "ManagedByEdge";
     public static final String CONTAINS_TYPE = "Contains";
     public static final String MANAGES_TYPE = "Manages";
 

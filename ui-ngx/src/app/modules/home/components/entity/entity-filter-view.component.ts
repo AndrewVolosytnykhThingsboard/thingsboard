@@ -1,7 +1,7 @@
 ///
 /// ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
 ///
-/// Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+/// Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
 ///
 /// NOTICE: All information contained herein is, and remains
 /// the property of ThingsBoard, Inc. and its suppliers,
@@ -100,6 +100,10 @@ export class EntityFilterViewComponent implements ControlValueAccessor {
           this.filterDisplayValue = this.translate.instant(entityTypeTranslations.get(entityType).nameStartsWith,
             {prefix});
           break;
+        case AliasFilterType.entityType:
+          entityType = this.filter.entityType;
+          this.filterDisplayValue = this.translate.instant(entityTypeTranslations.get(entityType).typePlural);
+          break;
         case AliasFilterType.entityGroupList:
           entityType = this.filter.groupType;
           count = this.filter.entityGroupList.length;
@@ -156,6 +160,17 @@ export class EntityFilterViewComponent implements ControlValueAccessor {
               {entityView});
           }
           break;
+        case AliasFilterType.edgeType:
+          const edgeType = this.filter.edgeType;
+          prefix = this.filter.edgeNameFilter;
+          if (prefix && prefix.length) {
+            this.filterDisplayValue = this.translate.instant('alias.filter-type-edge-type-and-name-description',
+              {edgeType, prefix});
+          } else {
+            this.filterDisplayValue = this.translate.instant('alias.filter-type-edge-type-description',
+              {edgeType});
+          }
+          break;
         case AliasFilterType.relationsQuery:
           allEntitiesText = this.translate.instant('alias.all-entities');
           anyRelationText = this.translate.instant('alias.any-relation');
@@ -210,6 +225,7 @@ export class EntityFilterViewComponent implements ControlValueAccessor {
           break;
         case AliasFilterType.assetSearchQuery:
         case AliasFilterType.deviceSearchQuery:
+        case AliasFilterType.edgeSearchQuery:
         case AliasFilterType.entityViewSearchQuery:
           allEntitiesText = this.translate.instant('alias.all-entities');
           anyRelationText = this.translate.instant('alias.any-relation');
@@ -251,6 +267,16 @@ export class EntityFilterViewComponent implements ControlValueAccessor {
             this.filterDisplayValue = this.translate.instant('alias.filter-type-device-search-query-description',
               translationValues
             );
+          } else if (this.filter.type === AliasFilterType.edgeSearchQuery) {
+            const edgeTypesQuoted = [];
+            this.filter.edgeTypes.forEach((filterEdgeType) => {
+              edgeTypesQuoted.push(`'${filterEdgeType}'`);
+            });
+            const edgeTypesText = edgeTypesQuoted.join(', ');
+            translationValues.edgeTypes = edgeTypesText;
+            this.filterDisplayValue = this.translate.instant('alias.filter-type-edge-search-query-description',
+              translationValues
+            );
           } else if (this.filter.type === AliasFilterType.entityViewSearchQuery) {
             const entityViewTypesQuoted = [];
             this.filter.entityViewTypes.forEach((filterEntityViewType) => {
@@ -259,6 +285,16 @@ export class EntityFilterViewComponent implements ControlValueAccessor {
             const entityViewTypesText = entityViewTypesQuoted.join(', ');
             translationValues.entityViewTypes = entityViewTypesText;
             this.filterDisplayValue = this.translate.instant('alias.filter-type-entity-view-search-query-description',
+              translationValues
+            );
+          } else if (this.filter.type === AliasFilterType.edgeSearchQuery) {
+            const edgeTypesQuoted = [];
+            this.filter.edgeTypes.forEach((filterEdgeType) => {
+              edgeTypesQuoted.push(`'${filterEdgeType}'`);
+            });
+            const edgeTypesText = edgeTypesQuoted.join(', ');
+            translationValues.edgeTypes = edgeTypesText;
+            this.filterDisplayValue = this.translate.instant('alias.filter-type-edge-search-query-description',
               translationValues
             );
           }

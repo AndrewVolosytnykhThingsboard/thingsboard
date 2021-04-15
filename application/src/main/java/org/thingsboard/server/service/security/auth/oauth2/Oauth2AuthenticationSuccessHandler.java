@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -37,15 +37,15 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
-import org.thingsboard.server.common.data.oauth2.OAuth2ClientRegistrationInfo;
-import org.thingsboard.server.dao.oauth2.OAuth2Service;
 import org.thingsboard.server.common.data.id.CustomerId;
 import org.thingsboard.server.common.data.id.EntityId;
 import org.thingsboard.server.common.data.id.TenantId;
+import org.thingsboard.server.common.data.oauth2.OAuth2ClientRegistrationInfo;
 import org.thingsboard.server.common.data.security.Authority;
+import org.thingsboard.server.common.data.security.model.JwtToken;
+import org.thingsboard.server.dao.oauth2.OAuth2Service;
 import org.thingsboard.server.service.security.auth.jwt.RefreshTokenRepository;
 import org.thingsboard.server.service.security.model.SecurityUser;
-import org.thingsboard.server.service.security.model.token.JwtToken;
 import org.thingsboard.server.service.security.model.token.JwtTokenFactory;
 import org.thingsboard.server.service.security.system.SystemSecurityService;
 
@@ -64,20 +64,23 @@ public class Oauth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private final OAuth2ClientMapperProvider oauth2ClientMapperProvider;
     private final OAuth2Service oAuth2Service;
     private final OAuth2AuthorizedClientService oAuth2AuthorizedClientService;
+    private final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository;
     private final SystemSecurityService systemSecurityService;
-
 
     @Autowired
     public Oauth2AuthenticationSuccessHandler(final JwtTokenFactory tokenFactory,
                                               final RefreshTokenRepository refreshTokenRepository,
                                               final OAuth2ClientMapperProvider oauth2ClientMapperProvider,
                                               final OAuth2Service oAuth2Service,
-                                              final OAuth2AuthorizedClientService oAuth2AuthorizedClientService, SystemSecurityService systemSecurityService) {
+                                              final OAuth2AuthorizedClientService oAuth2AuthorizedClientService,
+                                              final HttpCookieOAuth2AuthorizationRequestRepository httpCookieOAuth2AuthorizationRequestRepository,
+                                              final SystemSecurityService systemSecurityService) {
         this.tokenFactory = tokenFactory;
         this.refreshTokenRepository = refreshTokenRepository;
         this.oauth2ClientMapperProvider = oauth2ClientMapperProvider;
         this.oAuth2Service = oAuth2Service;
         this.oAuth2AuthorizedClientService = oAuth2AuthorizedClientService;
+        this.httpCookieOAuth2AuthorizationRequestRepository = httpCookieOAuth2AuthorizationRequestRepository;
         this.systemSecurityService = systemSecurityService;
     }
 
@@ -85,8 +88,7 @@ public class Oauth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
                                         Authentication authentication) throws IOException {
-
-        String baseUrl = systemSecurityService.getBaseUrl(Authority.SYS_ADMIN, TenantId.SYS_TENANT_ID, new CustomerId(EntityId.NULL_UUID), request);
+        String baseUrl = this.systemSecurityService.getBaseUrl(Authority.SYS_ADMIN, TenantId.SYS_TENANT_ID, new CustomerId(EntityId.NULL_UUID), request);
         try {
             OAuth2AuthenticationToken token = (OAuth2AuthenticationToken) authentication;
 
@@ -101,10 +103,17 @@ public class Oauth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             JwtToken accessToken = tokenFactory.createAccessJwtToken(securityUser);
             JwtToken refreshToken = refreshTokenRepository.requestRefreshToken(securityUser);
 
+            clearAuthenticationAttributes(request, response);
             getRedirectStrategy().sendRedirect(request, response, baseUrl + "/?accessToken=" + accessToken.getToken() + "&refreshToken=" + refreshToken.getToken());
         } catch (Exception e) {
+            clearAuthenticationAttributes(request, response);
             getRedirectStrategy().sendRedirect(request, response, baseUrl + "/login?loginError=" +
                     URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8.toString()));
         }
+    }
+
+    protected void clearAuthenticationAttributes(HttpServletRequest request, HttpServletResponse response) {
+        super.clearAuthenticationAttributes(request);
+        httpCookieOAuth2AuthorizationRequestRepository.removeAuthorizationRequestCookies(request, response);
     }
 }

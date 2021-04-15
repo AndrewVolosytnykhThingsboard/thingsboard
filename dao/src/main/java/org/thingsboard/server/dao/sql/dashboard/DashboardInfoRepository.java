@@ -1,7 +1,7 @@
 /**
  * ThingsBoard, Inc. ("COMPANY") CONFIDENTIAL
  *
- * Copyright © 2016-2020 ThingsBoard, Inc. All Rights Reserved.
+ * Copyright © 2016-2021 ThingsBoard, Inc. All Rights Reserved.
  *
  * NOTICE: All information contained herein is, and remains
  * the property of ThingsBoard, Inc. and its suppliers,
@@ -51,6 +51,13 @@ public interface DashboardInfoRepository extends PagingAndSortingRepository<Dash
                                              @Param("searchText") String searchText,
                                              Pageable pageable);
 
+    @Query("SELECT di FROM DashboardInfoEntity di WHERE di.tenantId = :tenantId AND di.customerId = :customerId " +
+            "AND LOWER(di.searchText) LIKE LOWER(CONCAT(:searchText, '%'))")
+    Page<DashboardInfoEntity> findByTenantIdAndCustomerId(@Param("tenantId") UUID tenantId,
+                                                          @Param("customerId") UUID customerId,
+                                                          @Param("searchText") String searchText,
+                                                          Pageable pageable);
+
     @Query("SELECT di FROM DashboardInfoEntity di, " +
             "RelationEntity re " +
             "WHERE di.id = re.toId AND re.toType = 'DASHBOARD' " +
@@ -74,5 +81,14 @@ public interface DashboardInfoRepository extends PagingAndSortingRepository<Dash
                                                    Pageable pageable);
 
     List<DashboardInfoEntity> findByIdIn(List<UUID> dashboardIds);
+
+    @Query("SELECT di FROM DashboardInfoEntity di, RelationEntity re WHERE di.tenantId = :tenantId " +
+            "AND di.id = re.toId AND re.toType = 'DASHBOARD' AND re.relationTypeGroup = 'EDGE' " +
+            "AND re.relationType = 'Contains' AND re.fromId = :edgeId AND re.fromType = 'EDGE' " +
+            "AND LOWER(di.searchText) LIKE LOWER(CONCAT(:searchText, '%'))")
+    Page<DashboardInfoEntity> findByTenantIdAndEdgeId(@Param("tenantId") UUID tenantId,
+                                                      @Param("edgeId") UUID edgeId,
+                                                      @Param("searchText") String searchText,
+                                                      Pageable pageable);
 
 }
