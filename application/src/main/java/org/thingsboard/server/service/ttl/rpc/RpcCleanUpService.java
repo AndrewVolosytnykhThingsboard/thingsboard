@@ -42,6 +42,8 @@ import java.util.concurrent.TimeUnit;
 public class RpcCleanUpService {
     @Value("${sql.ttl.rpc.enabled}")
     private boolean ttlTaskExecutionEnabled;
+    @Value("${sql.ttl.rpc.rpc_ttl}")
+    private long systemRpcTtl;
 
     private final TenantDao tenantDao;
     private final PartitionService partitionService;
@@ -61,11 +63,12 @@ public class RpcCleanUpService {
                     }
 
                     Optional<DefaultTenantProfileConfiguration> tenantProfileConfiguration = tenantProfileCache.get(tenantId).getProfileConfiguration();
-                    if (tenantProfileConfiguration.isEmpty() || tenantProfileConfiguration.get().getRpcTtlDays() == 0) {
+                    long computingTtl = computeTtl(tenantProfileConfiguration);
+                    if(computingTtl <= 0) {
                         continue;
                     }
 
-                    long ttl = TimeUnit.DAYS.toMillis(tenantProfileConfiguration.get().getRpcTtlDays());
+                    long ttl = TimeUnit.DAYS.toMillis(computingTtl);
                     long expirationTime = System.currentTimeMillis() - ttl;
 
                     long totalRemoved = rpcDao.deleteOutdatedRpcByTenantId(tenantId, expirationTime);
@@ -77,6 +80,18 @@ public class RpcCleanUpService {
 
                 tenantsBatchRequest = tenantsBatchRequest.nextPageLink();
             } while (tenantsIds.hasNext());
+        }
+    }
+
+    private long computeTtl(Optional<DefaultTenantProfileConfiguration> tenantProfileConfiguration) {
+        if(tenantProfileConfiguration.isEmpty() || tenantProfileConfiguration.get().getRpcTtlDays() == 0) {
+            return systemRpcTtl;
+        } else {
+            if(systemRpcTtl == 0 || systemRpcTtl > tenantProfileConfiguration.get().getRpcTtlDays()) {
+                return tenantProfileConfiguration.get().getRpcTtlDays();
+            } else {
+                return systemRpcTtl;
+            }
         }
     }
 

@@ -279,6 +279,7 @@ sql:
       rpc:
         enabled: "${SQL_TTL_RPC_ENABLED:true}"
         checking_interval: "${SQL_RPC_TTL_CHECKING_INTERVAL:7200000}" # Number of milliseconds. The current value corresponds to two hours
+        rpc_ttl: "${SQL_RPC_TTL:0}" # Number of days. 0 - unlimited storage time.
 
 # Actor system parameters
 actors:

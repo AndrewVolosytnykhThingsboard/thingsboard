@@ -35,6 +35,8 @@ import static org.thingsboard.server.dao.service.Validator.validatePageLink;
 @Slf4j
 @RequiredArgsConstructor
 public class BaseRpcService implements RpcService {
+    private final RpcValidator rpcValidator;
+
     public static final String INCORRECT_TENANT_ID = "Incorrect tenantId ";
     public static final String INCORRECT_RPC_ID = "Incorrect rpcId ";
 
@@ -42,6 +44,7 @@ public class BaseRpcService implements RpcService {
 
     @Override
     public Rpc save(Rpc rpc) {
+        rpcValidator.validate(rpc);
         log.trace("Executing save, [{}]", rpc);
         return rpcDao.save(rpc.getTenantId(), rpc);
     }
